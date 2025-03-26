@@ -98,9 +98,14 @@ Click on a client to start controlling it.
 - **AV Detection**: The payload might trigger antivirus software. You can attempt to obfuscate it using tools like PyArmor.
 
 ## Contribute
-This is a Python playground. Fork it, modify it, and submit pull requests. Let’s make it stronger together.
+This is a Python playground. Fork it, modify it, and submit pull requests. Let’s make it stronger together. but include me
 
 ## License
 This project is licensed under the MIT License. You can do whatever you like with it—just don’t blame us if things go sideways.
 
-**ShadowReign: Born in darkness. Built for a god. Rule eternal.**
+## Updates
+If yall have any ideas to make this better or for me to add let me know and ill try to add it.
+
+comming soon:AV BYPASS (ALREADY BYPASS MOST OF IT BUT NOT FULLY)
+
+**ShadowReign: best of the best**
