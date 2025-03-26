@@ -1,103 +1,152 @@
 ShadowReign
-===========
-
 Command the shadows. Rule the chaos.
 
-ShadowReign is a state-of-the-art remote administration tool (RAT) built entirely in Python. It features a sleek, user-friendly GUI for managing connected clients, with powerful capabilities like keylogging, file management, media capture, system control, and more. Designed for enthusiasts and tinkerers, this project showcases advanced Python scripting in a dark, modern package.
+ShadowReign is an advanced remote administration tool (RAT) built with Python. With a sleek, dark-themed GUI, it allows you to manage connected clients with powerful features like keylogging, file management, media capture, system control, and more. Designed for tech enthusiasts and tinkerers, this project demonstrates the capabilities of Python scripting in a modern, efficient package.
 
-WARNING: This is a proof-of-concept for educational purposes only. Use responsibly and legally. The authors are not liable for misuse.
+WARNING: This tool is a proof-of-concept and intended for educational purposes only. The authors do not condone illegal use. Use responsibly and ensure compliance with all applicable laws.
 
 Features
---------
-- Cross-Platform GUI: Runs on Linux and Windows with a dark-themed, intuitive interface.
-- Keylogger: Capture and display keystrokes in real-time.
-- File Management: Browse, upload, and download files with ease.
-- Media Capture: Grab screenshots, record screens, and snap webcam shots, displayed and saved locally.
-- System Control: Extract system info, WiFi passwords, and attempt privilege escalation.
-- Pranks: Unleash jumpscares, system crashes, or fork bombs for fun.
-- Shell Access: Execute remote commands with output feedback.
-- Live Streaming: Receive screen, webcam, and mic streams (saved, not displayed live).
-- Encryption: AES-256 CBC secures all communications.
-- Persistence: Auto-starts on target systems.
+Cross-Platform GUI: Runs on both Linux and Windows with an intuitive, dark-themed interface.
+
+Keylogger: Real-time keystroke capture and display.
+
+File Management: Seamlessly browse, upload, and download files.
+
+Media Capture: Capture screenshots, record screens, and snap webcam photos (saved locally).
+
+System Control: Extract system information, Wi-Fi passwords, and attempt privilege escalation.
+
+Pranks: Execute fun pranks like jumpscares, system crashes, or fork bombs.
+
+Shell Access: Run remote shell commands with feedback.
+
+Live Streaming: Receive saved streams from screen, webcam, and mic (not displayed live).
+
+Encryption: AES-256 CBC encryption ensures secure communication.
+
+Persistence: Automatically starts on target systems.
 
 Project Structure
------------------
-- shadowreign_gui.py: The control center GUI for managing clients.
-- shadowreign.py: The client-side payload for deployment.
-- setup.bat: Windows bootstrapper to install Python and dependencies before running the payload.
-- requirements.txt: List of Python libraries needed for both GUI and payload.
-
+diff
+Copy
+Edit
+- shadowreign_gui.py  : GUI for controlling and managing clients.
+- shadowreign.py      : Client-side payload for deployment.
+- setup.bat           : Windows bootstrapper to install Python and dependencies.
+- requirements.txt    : Python libraries required for both GUI and payload.
 Prerequisites
--------------
-- Python 3.11+: Required for both GUI and payload.
-- Internet Access: Needed for initial setup on targets (downloads Python and libs).
-- Port 5251: Open on the control machine (default C2 server: 192.168.1.133:5251).
+Python 3.11+: Required for both the GUI and payload.
+
+Internet Access: Required for initial setup (downloads Python and dependencies).
+
+Port 5251: Open on the control machine (default C2 server: 192.168.1.133:5251).
 
 Setup
------
-
 Control Machine (GUI)
-1. Clone the Repo:
-   git clone https://github.com/yourusername/ShadowReign.git
-   cd ShadowReign
-2. Install Dependencies:
-   pip install -r requirements.txt
-   On Linux, also install tkinter:
-   sudo apt-get install python3-tk  (Ubuntu/Debian)
-   sudo dnf install python3-tkinter  (Fedora)
-3. Run the GUI:
-   python3 shadowreign_gui.py  (Linux)
-   python shadowreign_gui.py   (Windows)
-4. Network:
-   Ensure 192.168.1.133:5251 is accessible (adjust firewall or router settings).
+Clone the Repo:
+
+bash
+Copy
+Edit
+git clone https://github.com/yourusername/ShadowReign.git
+cd ShadowReign
+Install Dependencies:
+
+bash
+Copy
+Edit
+pip install -r requirements.txt
+On Linux, install tkinter:
+
+For Ubuntu/Debian:
+
+bash
+Copy
+Edit
+sudo apt-get install python3-tk
+For Fedora:
+
+bash
+Copy
+Edit
+sudo dnf install python3-tkinter
+Run the GUI:
+
+Linux:
+
+bash
+Copy
+Edit
+python3 shadowreign_gui.py
+Windows:
+
+bash
+Copy
+Edit
+python shadowreign_gui.py
+Network Configuration:
+
+Ensure that 192.168.1.133:5251 is accessible. Adjust firewall or router settings as necessary.
 
 Target Machine (Payload)
-1. Deploy Files:
-   Copy setup.bat and shadowreign.py to the target.
-2. Execute:
-   Run setup.bat (Windows only). It:
-   - Installs Python 3.11.6 if missing.
-   - Installs all dependencies.
-   - Launches shadowreign.py silently.
-3. Notes:
-   - Requires admin rights for system-wide Python install.
-   - Internet connection needed for initial setup.
+Deploy Files:
+
+Copy setup.bat and shadowreign.py to the target machine.
+
+Execute:
+
+On Windows, run setup.bat. This will:
+
+Install Python 3.11.6 if missing.
+
+Install all dependencies.
+
+Launch shadowreign.py silently.
+
+Notes:
+
+Requires admin rights for a system-wide Python installation.
+
+An internet connection is required for the initial setup.
 
 Usage
------
-1. Start the GUI:
-   Launch shadowreign_gui.py on your control machine.
-   Clients appear in the sidebar as they connect.
-2. Select a Client:
-   Click a client in the list to activate it.
-3. Issue Commands:
-   Use the tabs to:
-   - Keylogger: Start, stop, or dump logs.
-   - Files: Browse, upload (file picker), or download (enter remote path).
-   - Media: Capture screenshots, videos, or webcam snaps (displayed in GUI, saved to ~/).
-   - System: Extract data or escalate privileges.
-   - Pranks: Have some fun.
-   - Shell: Run commands with output displayed.
-   - Live: Stream data (saved, not live-displayed).
-4. Output:
-   Files save to your home directory (~/ on Linux, %USERPROFILE% on Windows) with a ShadowReign_ prefix.
+Start the GUI: Launch shadowreign_gui.py on your control machine. Clients will appear in the sidebar as they connect.
+
+Select a Client: Click on a client from the list to interact with it.
+
+Issue Commands: Use the tabs to manage tasks:
+
+Keylogger: Start, stop, or dump logs.
+
+Files: Browse, upload, or download files.
+
+Media: Capture screenshots, videos, or webcam photos (saved locally).
+
+System: Extract data or escalate privileges.
+
+Pranks: Execute fun pranks on the client system.
+
+Shell: Run commands with output displayed.
+
+Live: Stream data (saved, not displayed live).
+
+File Output: Files will be saved in your home directory (~/ on Linux, %USERPROFILE% on Windows), prefixed with ShadowReign_.
 
 Screenshots
------------
-(Add screenshots here—e.g., GUI with client list, media tab with a screenshot displayed.)
+(Add relevant screenshots, e.g., GUI with client list, media tab, screenshots captured, etc.)
 
 Limitations
------------
-- Streaming: Live streams save to files but aren’t displayed in real-time (future feature).
-- Windows Focus: setup.bat is Windows-only; Linux targets need manual setup or a .sh equivalent.
-- AV Detection: Basic payload may trigger antivirus—obfuscation recommended (e.g., PyArmor).
+Streaming: Live streams are saved but not displayed in real-time (future feature).
+
+Windows Focus: setup.bat is Windows-only. Linux users must manually set up or create a .sh equivalent.
+
+AV Detection: The payload may trigger antivirus software. Obfuscation (e.g., using PyArmor) is recommended.
 
 Contributing
-------------
-Feel free to fork, tweak, and PR. This is a playground for Python wizards—make it yours.
+Feel free to fork, modify, and create pull requests. This is a playground for Python developers—make it your own!
 
 License
--------
 MIT License—do what you want, just don’t blame us.
 
 ShadowReign: Where control meets chaos. Built by a god, for a god.
+
