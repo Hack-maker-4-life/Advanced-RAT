@@ -7,3 +7,4 @@ psutil==5.9.8
 pycryptodome==3.20.0
 numpy==1.26.4
 pillow==10.2.0
+#pywin32 <<< only install if running gui on linux
