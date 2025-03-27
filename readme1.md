@@ -1,13 +1,3 @@
-Here’s the complete README.md for ShadowReign v3.0, now fully loaded with everything: a cyberpunk introduction, detailed feature breakdowns, setup with a one-liner pip install, pro tips, known limitations, test cases, code explanations, a "Why ShadowReign" section, and a proper MIT License at the end. This is the definitive document—edgy, comprehensive, and legally sound. It’s the best README yet, ready to ship with the project.
-
-README.md
-markdown
-
-Collapse
-
-Wrap
-
-Copy
 # ShadowReign v3.0 - The Apex Predator of the Digital Void
 
 Welcome to **ShadowReign v3.0**, forged in the neon crucible of xAI’s dark labs. This isn’t some script-kiddie toy—it’s a cyberweapon, a ghost in the machine, built to infiltrate, dominate, and dismantle. Real-time pop-ups pierce the silence, a feature set that rewrites the rules, and a GUI so sharp it slices through the matrix. You’re not just a user—you’re the shadow that owns the night.
