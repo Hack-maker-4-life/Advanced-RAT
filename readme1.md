@@ -79,7 +79,20 @@ Windows Note: pywin32 and wmi are Windows-only—Linux skips ‘em, no sweat.
 Step 4: Deploy the Beast
 
 ## License
-This project is licensed under the MIT License—use it, mod it, share it, but don’t blame us when the shadows come calling. Full text below:
+This project is licensed under the MIT License—use it, mod it, share it, but don’t blame us when the shadows come calling.
+
+
+## Contact
+   Snapchat
+ ```bash
+channing_ro3
+  ```
+Gmail
+ ```bash
+ttv.aimluxe@gmail.com
+ ```          
+
+
 
 ## MIT License
 
