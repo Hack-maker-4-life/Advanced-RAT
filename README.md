@@ -109,3 +109,9 @@ If yall have any ideas to make this better or for me to add let me know and ill 
 comming soon:AV BYPASS (ALREADY BYPASS MOST OF IT BUT NOT FULLY)
 
 **ShadowReign: best of the best**
+
+## Install
+
+ ```bash
+  `pip install pynput mss opencv-python pyaudio pyttsx3 psutil pycryptodome numpy pillow pywin32
+ ```
