@@ -65,4 +65,14 @@ ShadowReign v2.0 is the RAT you’ve been waiting for—stealthy, powerful, and 
 ---
 **Last Updated**: March 27, 2025  
 **License**: MIT (or whatever you vibe with)  
-**Contact**: Hit me up in issues—let’s talk shop.
+
+## Contact
+   Snapchat
+ ```bash
+channing_ro3
+  ```
+Gmail
+ ```bash
+ttv.aimluxe@gmail.com
+ ```          
+
