@@ -1,78 +1,88 @@
-# ShadowReign - The Ultimate RAT (v2.0)
+# ShadowReign v3.0 - The Apex Predator of the Digital Void
 
-ShadowReign is back, and it’s the king of RATs—undetectable, unkillable, and loaded with features that’ll make your targets wish they never clicked. Built for stealth and power, this version’s got a new Kali Linux-inspired glass GUI and enough tricks to own any system, anywhere. Whether you’re testing defenses or just causing chaos, ShadowReign’s got your back.
+Welcome to **ShadowReign v3.0**, forged in the neon crucible of xAI’s dark labs. This isn’t some script-kiddie toy—it’s a cyberweapon, a ghost in the machine, built to infiltrate, dominate, and dismantle. Real-time pop-ups pierce the silence, a feature set that rewrites the rules, and a GUI so sharp it slices through the matrix. You’re not just a user—you’re the shadow that owns the night.
 
-## What’s New in v2.0
-- **Stealth Overdrive**:
-  - Hides in deep dirs (`%APPDATA%\Microsoft\Crypto\RSA` or `/var/lib/`) with random `.dll`/`.so` names—good luck finding it.
-  - Injects into `svchost.exe`—runs silent, blends in like a ghost.
-  - AV bypass with AES-GCM encryption, compression, and process hollowing—laughs at defenders.
-  - Watchdog restarts it if killed—unstoppable persistence.
+## The Legend Unleashed
+ShadowReign v3.0 is the third evolution of a RAT that’s already claimed its throne. This version cranks the dial to eleven with live windows, an arsenal of chaos, and a design that screams Kali Linux on a cyberpunk bender. From stealth injections to system-crushing pranks, it’s all here, wrapped in a neon-green-on-black interface that’s your command deck for total control.
 
-- **Connection Lock**:
-  - 5s heartbeat + SO_KEEPALIVE—stays online, no disconnects.
-  - 0.5s reconnect loops—clings to the C2 like a pitbull.
-  - Offline queuing—commands wait and execute when back online.
+## Features - Your Arsenal of Domination
+### Real-Time Pop-Ups - Eyes on the Prize
+- **`> SCREENSHOT`**: Snaps the target’s screen in a flash—pops up instantly, no delay, all power.
+- **`> LIVE SCREEN`**: Streams their desktop at 30 FPS—live feed in a window that owns their every move.
+- **`> WEBCAM SNAP`**: Grabs a single webcam frame—pops up like a digital trophy.
+- **`> LIVE AUDIO`**: Streams their mic live—hear their panic through a window that pulses with sound.
 
-- **Feature Arsenal**:
-  - **Live Shell**: Real-time command execution—own the box interactively.
-  - **File Encryption**: Locks files with AES, exfils keys—ransomware vibes.
-  - **Browser Exfil**: Steals Chrome creds—logins are yours.
-  - **AV Killer**: Terminates common AV processes—clears the field.
-  - **Remote Desktop, Streams, Keylogger**: All live, all flawless.
+### Stealth - Invisible Predator
+- **Hides in Shadows**: Burrows into `%APPDATA%\Microsoft\Crypto\RSA` (Windows) or `/var/lib/` (Linux) with a random name—unseen, untouchable.
+- **Process Injection**: Slips into `svchost.exe` on Windows—runs silent, runs deep.
+- **Watchdog**: If it dies, it resurrects—keeps the beast alive no matter what.
+- **Persistence**: Registry on Windows, cron on Linux—boots back every time they power up.
+- **Anti-VM**: Detects virtual machines and self-destructs if toggled—keeps the hunters guessing.
 
-- **GUI Upgrade**:
-  - Kali Linux glass look—dark blue (`#0A0F1A`), neon cyan (`#00FFCC`), 95% transparency.
-  - Bigger, sleeker (1400x900)—live streams in a dedicated window.
-  - Courier font, glowing borders—hacker aesthetic on point.
+### Control - Bend Their Will
+- **Keylogger**: Logs every keystroke—start, stop, dump the haul whenever you want.
+- **Remote Desktop**: Moves their mouse, taps their keys—full control with a live stream to match.
+- **Live Shell**: Runs commands in real time—output streams back as you type.
+- **File Ops**: Lists dirs, uploads your payloads, downloads their secrets—own their filesystem.
+- **System Info**: Pulls OS, CPU, RAM, disk stats—know their rig inside out.
+- **Kill Process**: Snuffs out any PID you name—silence their defenses.
 
-## Setup
-1. **Control**:
-   - Update `self.c2_list` in `shadowreign.py` with your IP (e.g., `192.168.1.133`).
-   - Install: `pip install pynput mss opencv-python pyaudio pyttsx3 psutil pycryptodome numpy pillow pywin32 requests`.
-   - Run: `python shadowreign_gui.py`.
+### Media - Capture Their Reality
+- **Screenshot**: One-shot screen grabs—sent to your pop-up in a heartbeat.
+- **Screen Stream**: 30 FPS live feed—watch their screen like it’s yours.
+- **Screen Recording**: Captures video for a set duration—downloads as `screen_rec.avi`.
+- **Webcam Snap**: Single webcam shots—pops up for your viewing pleasure.
+- **Webcam Stream**: Live webcam feed—see their face as you tighten the grip.
+- **Mic Stream**: Real-time audio—every whisper, every scream, live in your ears.
+- **A/V Recording**: Streams audio for a set time—hear their world collapse.
 
-2. **Target**:
-   - Drop `shadowreign.py`, execute—it hides, injects, and phones home.
-   - Port `5251` must be open on the C2.
+### Exploits - Rip Their Defenses Apart
+- **Encrypt Files**: AES-CBC locks their files—adds `.enc`, sends you the key. Chaos is yours.
+- **Harvest Creds**: Steals Chrome logins—URLs, usernames, passwords, all yours.
+- **Steal Wi-Fi**: Grabs Windows Wi-Fi profiles and keys—cracks their network wide open.
+- **Disable AV**: Kills AV processes (AVG, Avast, etc.)—leaves them defenseless.
+- **Exfil Browser**: Pulls browser creds—same as harvest, but with intent to destroy.
+- **Ransom Note**: Drops a `README.txt` on their desktop—your message, their fear.
 
-3. **Stealth** (Optional):
-   - Obfuscate: `pyarmor pack -e "--onefile" shadowreign.py`.
-   - Test AV evasion—tweak if flagged.
+### Chaos - Unleash the Nightmare
+- **Jumpscare**: Audio taunts and creepy URLs—minimizes their screen, maximizes their terror.
+- **Crash System**: Kills `svchost.exe`—blue screen of death, instant havoc.
+- **Fork Bomb**: Spawns endless CMDs—chokes their CPU ‘til it begs for mercy.
+- **Lock Screen**: Locks their Windows station—traps them out of their own rig.
+- **Disable Input**: Blocks mouse and keyboard for a set time—total helplessness.
+- **Fake Alert**: Pops a system alert with your message—mind games at their finest.
+- **Play Sound**: Speaks your text through their speakers—haunt them with your voice.
 
-## Usage
-- Select a target in the GUI—green for "Online", yellow for "Reconnecting", red for "Offline".
-- Hit tabs: "Keys" for logs, "Live" for streams, "Exploit" for chaos.
-- Watch it dominate—live shell, encrypted files, stolen creds.
+### Network - Spread the Darkness
+- **USB Spread**: Copies itself to USB drives with `autorun.inf`—infects on plug-in (Windows).
+- **Download & Execute**: Pulls payloads from URLs and runs them—fresh chaos, delivered.
 
-## Install
+### Extras - The Finishing Blow
+- **Spoof Info**: Changes their hostname—rewrites their identity.
+- **Clear Logs**: Wipes system and app logs (Windows)—erases your tracks.
+- **Open URL**: Forces their browser to your link—direct their digital fate.
+- **Self-Destruct**: Deletes itself and persistence—vanishes like smoke when you’re done.
+
+## Setup - Jack In, Take Over
+### Step 1: Snag the Code
+- Clone or download `shadowreign.py`, `shadowreign_gui.py`, and this `README.md` from the repo. You’re holding the keys to the underworld.
+
+### Step 2: Set Your C2 Uplink
+- Open `shadowreign.py`, find `self.c2_list = [("192.168.1.133", 5251)]`.
+- Replace `"192.168.1.133"` with your machine’s IP—your command hub. Port `5251` is the default; tweak if you dare.
+
+### Step 3: Load the Arsenal
+- One command, all power. Copy this and run it in your terminal—13 dependencies, locked and loaded:
   ```bash
-pip install pynput mss opencv-python pyaudio pyttsx3 psutil pycryptodome numpy pillow pywin32 requests
-   ```
+  pip install pynput==1.7.6 mss==9.0.1 opencv-python==4.9.0.80 pyaudio==0.2.14 pyttsx3==2.90 psutil==5.9.8 pycryptodome==3.20.0 numpy==1.26.4 pillow==10.2.0 pywin32==306 requests==2.31.0 pyautogui==0.9.54 wmi==1.5.1
+Windows Note: pywin32 and wmi are Windows-only—Linux skips ‘em, no sweat.
+Step 4: Deploy the Beast
 
-## Notes
-- Built for Windows/Linux—cross-platform pain.
-- Use responsibly—test on your own systems, not your neighbor’s.
-- PRs welcome—make it nastier.
+## License
+This project is licensed under the MIT License—use it, mod it, share it, but don’t blame us when the shadows come calling. Full text below:
 
-## To-Do
-- Dynamic DNS C2—ditch static IPs.
-- Proxy support—hide behind layers.
-- More exploits—RDP takeover, privilege escalation.
+## MIT License
 
-ShadowReign v2.0 is the RAT you’ve been waiting for—stealthy, powerful, and damn good-looking. Star it, fork it, break it—let’s see what you’ve got.
+Copyright (c) 2025 xAI
 
----
-**Last Updated**: March 27, 2025  
-**License**: MIT (or whatever you vibe with just by using it you agree not to blame me)  
-
-## Contact
-   Snapchat
- ```bash
-channing_ro3
-  ```
-Gmail
- ```bash
-ttv.aimluxe@gmail.com
- ```          
-
+use at your own risk you cant blame me by using this u agree to that.!!!!!!
